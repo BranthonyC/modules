@@ -4,7 +4,7 @@
 
 static int __init troncostart(void)
 {
-        printk(KERNINFO "Que pasa tronco!\n");
+        printk(KERN_INFO "Que pasa tronco!\n");
         /*
          * Si no se devuelve 0 significa que initmodule ha fallado y no ha podido cargarse.
          */
@@ -12,7 +12,7 @@ static int __init troncostart(void)
 }
 static void __exit troncocleanup(void)
 {
-        printk(KERNINFO "Me voy dando el piro!\n");
+        printk(KERN_INFO "Me voy dando el piro!\n");
 }
 
 /*
