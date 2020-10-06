@@ -39,7 +39,6 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
      return 0;
     
 }
-
 static int al_abrir(struct inode *inode, struct file *file){
     return single_open(file, escribir_archivo,NULL);
 }
