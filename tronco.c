@@ -23,7 +23,6 @@ module_exit(troncocleanup);
 /*
  * Documentacion del modulo
  */
-MODULELICENSE("GPL");
-MODULEAUTHOR("Genbeta Dev - https://www.genbetadev.com");
-MODULEDESCRIPTION("Este modulo no vale para absolutamente nada");
-MODULESUPPORTEDDEVICE("eltiodelavara");
+MODULE_AUTHOR("Brandon Chitay");
+MODULE_DESCRIPTION("Simplemente un modulo de prueba");
+MODULE_LICENSE("GPL");
