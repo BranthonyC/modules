@@ -17,6 +17,7 @@ struct sysinfo inf;
 static int escribir_archivo(struct seq_file * archivo,void *v){
      long total_memoria = 0;
      long memoria_libre = 0;
+     long memoria_utilizada= 0;
      si_meminfo(&inf);
      total_memoria = inf.totalram * 4;
      memoria_libre = inf.freeram * 4;
@@ -31,7 +32,7 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
      seq_printf(archivo, "***                                                  ***\n");
      seq_printf(archivo, "********************************************************\n");
      seq_printf(archivo, "********************************************************\n");
-     long memoria_utilizada = total_memoria-memoria_libre;
+     memoria_utilizada = total_memoria-memoria_libre;
      seq_printf(archivo, "             Memoria Total: \t  %8lu MB           \n",total_memoria);
      seq_printf(archivo, "             Memoria Libre: \t  %8lu MB           \n",memoria_libre);
      seq_printf(archivo, "          Memoria Utilizada: \t  %8lu %%         \n",(memoria_utilizada * 100)/total_memoria);
