@@ -15,9 +15,11 @@ MODULE_AUTHOR("Eddy Sirin - 201503699");
 
 struct sysinfo inf;
 static int escribir_archivo(struct seq_file * archivo,void *v){
+     long total_memoria = 0;
+     long memoria_libre = 0;
      si_meminfo(&inf);
-     long total_memoria = (inf.totalram * 4);
-     long memoria_libre = (inf.freeram * 4);
+     total_memoria = inf.totalram * 4;
+     memoria_libre = inf.freeram * 4;
      seq_printf(archivo, "********************************************************\n");
      seq_printf(archivo, "***         Laboratorio Sistemas Operativos 1        ***\n");
      seq_printf(archivo, "***              Vacaciones Junio 2020               ***\n");
