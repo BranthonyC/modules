@@ -18,8 +18,8 @@ static void __exit troncocleanup(void)
 /*
  * Indicamos cuales son las funciones de inicio y fin
  */
-moduleinit(troncostart);
-moduleexit(troncocleanup);
+module_init(troncostart);
+module_exit(troncocleanup);
 /*
  * Documentacion del modulo
  */
