@@ -2,7 +2,7 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/fcntl.h>
-#include <asm/uaccess.h>
+// #include <asm/uaccess.h>
 #include <linux/syscalls.h>
 
 static void read_file(char *filename)
