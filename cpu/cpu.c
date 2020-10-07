@@ -9,7 +9,7 @@
 #include <linux/proc_fs.h>	/* Necessary because we use proc fs */
 #include <linux/seq_file.h>	/* for seq_file */
 
-#define PROC_NAME	"iter"
+#define PROC_NAME	"cpu_201503699"
 
 MODULE_AUTHOR("Philippe Reynes");
 MODULE_LICENSE("GPL");
@@ -70,6 +70,7 @@ static int my_seq_show(struct seq_file *s, void *v)
 	loff_t *spos = (loff_t *) v;
 	
 	seq_printf(s, "%Ld\n", *spos);
+    printk("%s\n", &spos);
 	return 0;
 }
 
