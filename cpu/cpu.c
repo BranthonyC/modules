@@ -70,7 +70,7 @@ static int my_seq_show(struct seq_file *s, void *v)
 	loff_t *spos = (loff_t *) v;
 	
 	seq_printf(s, "%Ld\n", *spos);
-    printk("%s\n", &spos);
+    printk("%s\n", s);
 	return 0;
 }
 
