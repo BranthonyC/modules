@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <asm/uaccess.h>
@@ -7,7 +8,7 @@
 #include <linux/init.h>		/* Needed for the macros */
 #include <linux/sched.h>    // informacion de procesos
 #include <linux/sched/signal.h> //para recorrido de procesos
-#include <stdio.h>
+
 
 //#include < linux/fs.h>
 
