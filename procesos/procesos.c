@@ -7,7 +7,7 @@
 #include <linux/init.h>		/* Needed for the macros */
 #include <linux/sched.h>    // informacion de procesos
 #include <linux/sched/signal.h> //para recorrido de procesos
-#include <studio.h>
+#include <stdio.h>
 
 //#include < linux/fs.h>
 
