@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <asm/uaccess.h>
@@ -8,6 +7,11 @@
 #include <linux/init.h>		/* Needed for the macros */
 #include <linux/sched.h>    // informacion de procesos
 #include <linux/sched/signal.h> //para recorrido de procesos
+#include <linux/fs.h>
+#include <asm/segment.h>
+#include <asm/uaccess.h>
+#include <linux/buffer_head.h>
+
 
 
 //#include < linux/fs.h>
@@ -37,16 +41,20 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
      seq_printf(archivo, "******************************************************************\n");
      seq_printf(archivo, "******************************************************************\n");
      seq_printf(archivo, "                                                            \n");
+
+     
+    //  ssize_t kernel_read()
   
     // for_each_process(task){
     //     pr_info("%s [%d]\n", task->comm, task->pid);
     //     seq_printf(archivo, "%s [%d]\n", task->comm, task->pid);/*    log parent id/executable name/state    */
     // }
 
-    fp = fopen("/proc/stat", "r");
-    char line[512];
-    fgets(line, sizeof(line), fp);
-    seq_printf(archivo, "%s\n", line);
+    // fp = fopen("/proc/stat", "r");
+    // char line[512];
+    // fgets(line, sizeof(line), fp);
+    // seq_printf(archivo, "%s\n", line);
+
 
 
     
@@ -66,8 +74,25 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
     //     }
         
     // }    
-     seq_printf(archivo, "*******************************************************************************************\n");
-     return 0;
+    seq_printf(archivo, "*******************************************************************************************\n");
+    f = filp_open("/proc/stat", O_RDONLY, 0);
+    if(f == NULL)
+        printk(KERN_ALERT "filp_open error!!.\n");
+    else{
+        // Get current segment descriptor
+        fs = get_fs();
+        // Set segment descriptor associated to kernel space
+        set_fs(get_ds());
+        // Read the file
+        f->f_op->read(f, buf, 128, &f->f_pos);
+        // Restore segment descriptor
+        set_fs(fs);
+        // See what we read from file
+        printk(KERN_INFO "buf:%s\n",buf);
+        seq_printf(archivo, "%s\n", buf);
+    }
+    filp_close(f,NULL);
+    return 0;
     
 }
 
