@@ -75,6 +75,15 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
         
     // }    
     seq_printf(archivo, "*******************************************************************************************\n");
+    struct file *f;
+    char buf[128];
+    mm_segment_t fs;
+    int i;
+    // Init the buffer with 0
+    for(i=0;i<128;i++){
+        buf[i] = 0;
+    }
+
     f = filp_open("/proc/stat", O_RDONLY, 0);
     if(f == NULL)
         printk(KERN_ALERT "filp_open error!!.\n");
