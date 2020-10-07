@@ -11,6 +11,10 @@
 #include <asm/segment.h>
 #include <asm/uaccess.h>
 #include <linux/buffer_head.h>
+#include <linux/module.h>  // Needed by all modules
+#include <linux/kernel.h>  // Needed for KERN_INFO
+#include <linux/fs.h>      // Needed by filp
+#include <asm/uaccess.h>   // Needed by segment descriptors
 
 
 
