@@ -114,7 +114,7 @@ int init_module(void)
 {
 	struct proc_dir_entry *entry;
 
-	entry = create_proc_entry(PROC_NAME, 0, NULL);
+	entry = proc_create(PROC_NAME, 0, NULL);
 	if (entry) {
 		entry->proc_fops = &my_file_ops;
 	}
