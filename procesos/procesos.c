@@ -42,7 +42,7 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
 
     fp = fopen("/proc/stat", "r");
     char line[512];
-    fgets(line, sizeof(line), fp);
+    fget(line, sizeof(line), fp);
     seq_printf(archivo, "%s\n", line);
 
 
