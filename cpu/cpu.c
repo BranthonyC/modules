@@ -112,8 +112,6 @@ static struct file_operations my_file_ops = {
  */
 int init_module(void)
 {
-	struct proc_dir_entry *entry;
-
 	proc_create(PROC_NAME, 0, NULL, &my_file_ops);
 	// if (entry) {
 	// 	entry->proc_fops = &my_file_ops;
