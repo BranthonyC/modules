@@ -39,6 +39,7 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
      
      
      seq_printf(archivo, "********************************************************\n");
+     seq_printf(archivo,"%s\n", si_stat)
      return 0;
     
 }
