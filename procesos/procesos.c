@@ -35,10 +35,23 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
      seq_printf(archivo, "******************************************************************\n");
      seq_printf(archivo, "                                                            \n");
   
-    for_each_process(task){
-        pr_info("%s [%d]\n", task->comm, task->pid);
-        seq_printf(archivo, "%s [%d]\n", task->comm, task->pid);/*    log parent id/executable name/state    */
-    }
+    // for_each_process(task){
+    //     pr_info("%s [%d]\n", task->comm, task->pid);
+    //     seq_printf(archivo, "%s [%d]\n", task->comm, task->pid);/*    log parent id/executable name/state    */
+    // }
+
+    fp = fopen("/proc/stat", "r");
+    char line[512];
+    fgets(line, sizeof(line), fp)
+    seq_printf(archivo, "%s\n", line)
+
+
+    
+
+    // seq_printf(archivo, "%s\n", line);
+
+
+
     //  for_each_process( task ){            /*    for_each_process() MACRO for iterating through each task in the os located in linux\sched\signal.h    */
     //     seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld }\n",task->pid,task->pid, task->comm, task->state);/*    log parent id/executable name/state    */
     //     list_for_each(list, &task->children){                        /*    list_for_each MACRO to iterate through task->children    */
