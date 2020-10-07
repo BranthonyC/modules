@@ -1,213 +1,162 @@
-
-/*  Mapfile Reading Module                  ::     code 2001 per mammon_
+/*
+ * skeldev3.c
  *
- *    This just demonstrates how to read the values of given symbols from
- *    a system mapfile while in kernel mode. The code is largely a quick
- *    hack after an all-nighter, but is functional.
+ * Simple implementation of a device driver with read() and write()
+ * file operations. The module creates the /dev/skeldev entry. A
+ * write to the device stores data into the driver buffer. A read from
+ * the device retrieves this data from the buffer.  The module also
+ * creates the /proc/skeldev entry. A read from this entry will
+ * display the current contents of the device buffer.
  *
- *    -- To compile:
- *       gcc -I/usr/src/linux/include -Wall -c mapfile_read`.c
+ * REQUIREMENTS
+ *
+ * The Device File System (devfs), Linux Kernel 2.4.x.
+ *
+ * COMPILE/LOAD/UNLOAD
+ *
+ * To compile the device:
+ *
+ *   $ gcc -D MODULE -D __KERNEL__ -c skeldev3.c
+ *
+ * To load the device:
+ *
+ *   $ sudo /sbin/insmod skeldev3.o
+ *
+ * To unload the device:
+ *
+ *   $ sudo /sbin/rmmod skeldev3
+ *
+ * AUTHOR
+ *
+ * Emanuele Altieri
+ * ealtieri@hampshire.edu
+ * June 2002
  */
-#define __KERNEL__
-#define MODULE
-#define LINUX
 
-#if CONFIG_MODVERSIONS==1
- #define MODVERSIONS
- #include <linux/modversions.h>
-#endif
-#include <linux/kernel.h>		/* half of these might not even be needed */
-#include <linux/module.h> 
-#include <linux/init.h>  
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/proc_fs.h>
 #include <linux/slab.h>
-#include <linux/unistd.h> 
-#include <linux/sched.h> 
 #include <linux/fs.h>
-#include <linux/file.h>	
-#include <linux/mm.h>
+#include <linux/version.h>
+#include <linux/devfs_fs_kernel.h>
+#include <linux/proc_fs.h>
+#include <asm/uaccess.h>
 
+/* Check  if the Device File System (experimental) is installed */
+#ifndef CONFIG_DEVFS_FS
+# error "This module requires the Device File System (devfs)"
+#endif
 
+/* MODULE CONFIGURATION */
 
-/* ============================================================== SYS_READ */
-static int my_goddamn_read_actor(read_descriptor_t * desc, struct page *page, unsigned long offset, unsigned long size)
-{
-   char *kaddr;
-   unsigned long left = 0, count = desc->count;
+MODULE_AUTHOR("Emanuele Altieri");
+MODULE_DESCRIPTION("Basic Device Driver");
+MODULE_LICENSE("GPL");
 
-   if (size > count) 	size = count;
+static devfs_handle_t skel_handle;    /* handle for the device     */
+static char* skel_name = "skeldev";   /* create /dev/skeldev entry */
 
-   kaddr = page->virtual;
-	if (! kaddr )		return(0);
-	memcpy( desc->buf, kaddr + offset, size);
-   desc->count = count - size;
-   desc->written += size;
-   desc->buf += size;
-   return size;
-}
+#define SKEL_BUFMAX 30
+static unsigned char skel_buffer[SKEL_BUFMAX];
 
-int my_goddamn_read(struct file *f, char * buf, size_t count){
-	ssize_t ret;
-   read_descriptor_t desc;
+/* File Operations */
 
-	if (! f || ! buf || ! count ) 	return -EBADF;
-	if (! f->f_op || f->f_op->read != generic_file_read )    return -EINVAL;
+static ssize_t skel_read(struct file*, char*, size_t, loff_t *);
+static ssize_t skel_write(struct file*, const char*, size_t, loff_t*);
 
-	if (f->f_mode & FMODE_READ) {
-		ret = locks_verify_area(FLOCK_VERIFY_READ, f->f_dentry->d_inode, f, 
-				                  f->f_pos, count);
-		if (!ret) {
-			desc.written = 0;
-			desc.count = count;
-			desc.buf = buf;
-			desc.error = 0;
-			do_generic_file_read(f, &f->f_pos, &desc, my_goddamn_read_actor);
-			ret = ( desc.written ) ? desc.written : desc.error;
-		}
-	}
-   return ret;
-}
-
-
-/* ============================================================== SYMBOLS */
-char *symbols[] = {
-	"idt_table", "set_intr_gate", "set_trap_gate", "set_system_gate",
-	"set_call_gate", "do_exit", "access_process_vm", "ptrace_readdata",
-	"ptrace_writedata", "putreg", "getreg", "show_state", "show_task",
-	"error_code", "do_debug", "do_int3", "do_nmi", NULL
+static struct file_operations skel_fops = {
+	read : skel_read,
+	write: skel_write,
+	/* NULL (default) */
 };
 
+/* /proc Filesystem Operations */
 
-/* check if this is one of the desired symbols */
-int deal_with_symbol(char *name, unsigned long address) {
-	int x;	
-	for ( x = 0; symbols[x]; x++ ) {
-		/* find first match */
-		if (! strncmp( symbols[x], name, strlen(symbols[x]) )) {
-			printk("found %s at %08lx\n",name, address);
-			return(1);
-		}
-	}
+static int skel_read_proc(char *buf, char **start, off_t offset, 
+			  int count, int *eof, void *data);
+
+/* Module Initialization */
+static int __init skel_init(void)
+{
+	struct proc_dir_entry *proc;
+
+	/* register the module */
+	SET_MODULE_OWNER(&skel_fops);
+	skel_handle = devfs_register
+		(
+		 NULL,                   /* parent dir in /dev (none)     */
+		 skel_name,              /* /dev entry name (skeldev)     */
+		 DEVFS_FL_AUTO_DEVNUM |  /* automatic major/minor numbers */
+		 DEVFS_FL_AUTO_OWNER,
+		 0, 0,                   /* major/minor (not used)        */
+		 S_IFCHR,                /* character device              */
+		 &skel_fops,             /* file ops handlers             */
+		 NULL                    /* other                         */
+		 );
+	if (skel_handle <= 0)
+		goto fail_devfs;
+
+	/* create /proc/skeldev entry */
+	proc = create_proc_read_entry
+		(
+		 skel_name,              /* entry name (/proc/skeldev)    */
+		 0,                      /* default mode                  */
+		 NULL,                   /* parent directory (NULL=/proc) */
+		 skel_read_proc,         /* read() handler                */
+		 NULL                    /* other data                    */
+		 ); 
+	if (proc == NULL)
+		goto fail_proc;
+		 
 	return(0);
-}
 
+ fail_proc:
+	devfs_unregister(skel_handle);
+ fail_devfs:
+	return(-EBUSY);
+} /* skel_init() */
 
-/* ============================================================== MAPFILE */
-/* fill 'name' and 'addr' with symbols from mapfile */
-int get_symbol_from_buf(unsigned char *buf, int len, char *name, 
-		                  unsigned long *addr) {
-	int x, start;
-	char addrbuf[12] = {0};
+/* Module deconstructor */
+static void __exit skel_exit(void)
+{
+	devfs_unregister(skel_handle);
+	remove_proc_entry(skel_name, NULL /* parent dir */);
+} /* skel_exit() */
 
-	/* first 8 chars are address */
-	memcpy( addrbuf, buf, 8 );
+/* Read from device */
+static ssize_t 
+skel_read(struct file *filp, char *buf, size_t count, loff_t *offp)
+{
+	if (count > SKEL_BUFMAX)
+		count = SKEL_BUFMAX;  /* trim data */
+	copy_to_user(buf, skel_buffer, count);
+	return(count);
+} /* skel_read() */
 
-	*addr = simple_strtoul(addrbuf, NULL, 16); 
-	if (! *addr ) {
-		/* we have a problem: advance to next \n and exit */
-		for ( x = 0; x < len && buf[x] != '\n'; x++ )	
-			;
-		return(0); 
-	}
-	/* next 3 chars are pointless */
-	start = x = 11;
+/* Write to device */
+static ssize_t 
+skel_write(struct file *filp, const char *buf, size_t count, loff_t *offp)
+{
+	if (count > SKEL_BUFMAX)
+		count = SKEL_BUFMAX;
+	copy_from_user(skel_buffer, buf, count);
+	return(count);
+} /* skel_write() */
 
-	while( buf[x] != '\n' && buf[x] != 0 && x < len ) {
-		x++;
-	}
-	if ( buf[x] != '\n' ) {
-		/* we ran off the end of the buffer */
-		return(0);
-	}
-	memcpy( name, &buf[start], x - start );
-	return(x + 1);
-}
+/* Read from the /proc/skeldev entry */
+static int 
+skel_read_proc(char *buf, char **start, off_t offset, int count, 
+	       int *eof, void *data)
+{
+	if (count > SKEL_BUFMAX)
+		count = SKEL_BUFMAX;
+	memcpy(buf, skel_buffer, count);   /* generate file */
+	*eof = 1;                          /* end of file */
+	return(count);
+} /* skel_read_proc() */
 
-#define MAPFILE_PAGE_SIZE 4096
-/* take page from mapfile, search for symbols, return # bytes read before
- * final newline */
-int do_mapfile_page(char *buf, char *cache){
-	int x, last_n, tmpsize, pos = 0;
-	unsigned long address;
-	unsigned char name[64] = {0}, tmpbuf[128 + 64] = {0};
-
-	if (! buf || ! cache ) return(0);
-
-	if ( cache[0] ) {
-		/* find last incomplete line in cache */
-		for ( x = 0; x < 128; x++ )	
-			if (cache[x] == '\n' ) last_n = x;
-
-		tmpsize = 128 - last_n; 
-		/* copy last incomplete line and a good helping of the next buffer */
-		memcpy( tmpbuf, &cache[last_n + 1], tmpsize - 1 );
-		for ( x = 0; x < MAPFILE_PAGE_SIZE && buf[x] != '\n'; x++ )	
-			;
-		memcpy( &tmpbuf[tmpsize], buf, x + 1 );
-		tmpsize += x;
-
-		/* get first symbol from cache */
-		if ( get_symbol_from_buf( tmpbuf, tmpsize, name, &address ) ) {
-			deal_with_symbol(name, address);
-			memset(name, 0, 64);
-		} /* else I guess we just live with it :P */
-
-		/* ...and mark place in buf where we will start looking */
-		pos = x + 1;
-	}
-
-	while (  pos < MAPFILE_PAGE_SIZE && 
-			  (tmpsize = get_symbol_from_buf( &buf[pos], MAPFILE_PAGE_SIZE - pos, 
-														 name, &address))  )      {
-		/* compare against known symbols */
-		deal_with_symbol(name, address);
-		memset(name, 0, 64);
-		pos += tmpsize;
-	}
-	return(1);
-}
-
-int read_mapfile( char *path ) {
-	struct file *f;
-	char *buf, cache[128] = {0};
-	unsigned int size;
-
-	buf = kmalloc( MAPFILE_PAGE_SIZE, GFP_KERNEL );
-	if (! buf ) 	return(0);
-
-	f = filp_open(path, O_RDONLY, 0);
-	if ( f ) {
-		if ( f->f_op->read != generic_file_read ) {
-			filp_close(f, 0);	/* we have no locks, so need no owner param */
-			return(0);
-		}
-
-		size = f->f_dentry->d_inode->i_size;
-		while( my_goddamn_read(f, buf, MAPFILE_PAGE_SIZE) > 0 ) {
-			do_mapfile_page( buf, cache );
-
-			/* store the last 128 bytes of the buffer in cache */
-			memcpy( cache, &buf[MAPFILE_PAGE_SIZE - 128], 128);
-			memset( buf, 0, MAPFILE_PAGE_SIZE );
-		}
-		filp_close(f, 0);	/* we have no locks, so need no owner param */
-	}
-	kfree(buf);
-	return(1);
-}
-
-/* ========================================================== MODULE INIT */
-char *mapfile;
-MODULE_PARM(mapfile, "s");
-
-int __init init_dbg_mod(void){
-   EXPORT_NO_SYMBOLS;
-	
-	if (! mapfile) mapfile = "/boot/System.map";
-	read_mapfile( mapfile );
-
-	return(1);
-}
-
-module_init(init_dbg_mod);
-
-/* ================================================================== EOF */
+/* Specify init and exit functions */
+module_init(skel_init);
+module_exit(skel_exit);
