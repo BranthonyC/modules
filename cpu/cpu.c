@@ -42,8 +42,9 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
 
      struct task_struct *task;
 
-    for_each_process(task)
+    for_each_process(task){
         seq_printf("%s [%d]\n", task->comm, task->pid);
+    }
 
     return 0;
      return 0;
