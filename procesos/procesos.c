@@ -7,6 +7,8 @@
 #include <linux/init.h>		/* Needed for the macros */
 #include <linux/sched.h>    // informacion de procesos
 #include <linux/sched/signal.h> //para recorrido de procesos
+#include <studio.h>
+
 //#include < linux/fs.h>
 
 #define BUFSIZE 150
@@ -42,7 +44,7 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
 
     fp = fopen("/proc/stat", "r");
     char line[512];
-    fget(line, sizeof(line), fp);
+    fgets(line, sizeof(line), fp);
     seq_printf(archivo, "%s\n", line);
 
 
