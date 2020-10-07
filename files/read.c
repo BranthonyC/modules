@@ -10,6 +10,14 @@ MODULE_AUTHOR("Slava Imameev");
 
 static struct task_struct* g_task = NULL;
 
+void put_task_struct(task_struct * task){
+	g_task = task;
+}
+
+task_struct get_task_struct(){
+	return g_task;
+}
+
 static ssize_t read_file(char* filename, void* buffer, size_t size, loff_t offset)
 {
 	struct file  *f;
