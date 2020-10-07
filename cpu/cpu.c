@@ -46,8 +46,11 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
         seq_printf(archivo, "{%s [%d]}\n ", task->comm, task->pid);
     }
 
+    stat("/proc/3889", {st_mode=S_IFDIR|0555, st_size=0, ...}) = 0
+    open("/proc/3889/stat", O_RDONLY)       = 7
+    read(7, "3889 (top) S 3854 3889 3854 3481"..., 1024) = 342
+
     return 0;
-     return 0;
     
 }
 static int al_abrir(struct inode *inode, struct file *file){
