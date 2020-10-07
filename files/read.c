@@ -1,9 +1,9 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/module.h>
-#include <linux/syscalls.h>
 #include <linux/fcntl.h>
 #include <asm/uaccess.h>
+#include <linux/syscalls.h>
 
 static void read_file(char *filename)
 {
@@ -30,9 +30,9 @@ static int __init init(void)
   return 0;
 }
 
-static void __exit exit(void)
+static void __exit salir(void)
 { }
 
 MODULE_LICENSE("GPL");
 module_init(init);
-module_exit(exit);
+module_exit(salir);
