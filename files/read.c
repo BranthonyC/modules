@@ -13,13 +13,13 @@ static void read_file(char *filename)
   mm_segment_t old_fs = get_fs();
   set_fs(KERNEL_DS);
 
-  fd = sys_open(filename, O_RDONLY, 0);
+  fd = ksys_open(filename, O_RDONLY, 0);
   if (fd >= 0) {
     printk(KERN_DEBUG);
-    while (sys_read(fd, buf, 1) == 1)
+    while (ksys_read(fd, buf, 1) == 1)
       printk("%c", buf[0]);
     printk("\n");
-    sys_close(fd);
+    ksys_close(fd);
   }
   set_fs(old_fs);
 }
