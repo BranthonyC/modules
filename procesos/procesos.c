@@ -11,10 +11,6 @@
 #include <asm/segment.h>
 #include <asm/uaccess.h>
 #include <linux/buffer_head.h>
-#include <linux/module.h>  // Needed by all modules
-#include <linux/kernel.h>  // Needed for KERN_INFO
-#include <linux/fs.h>      // Needed by filp
-#include <asm/uaccess.h>   // Needed by segment descriptors
 
 
 
@@ -95,7 +91,7 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
         // Get current segment descriptor
         fs = get_fs();
         // Set segment descriptor associated to kernel space
-        set_fs(get_ds());
+        set_fs(get_fs());
         // Read the file
         f->f_op->read(f, buf, 128, &f->f_pos);
         // Restore segment descriptor
