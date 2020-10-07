@@ -1,0 +1,7 @@
+
+#delete binaries and bkp files
+rm read_proc_file
+rm *~
+
+gcc -o read_proc_file read_proc_file.c
+

@@ -1,73 +1,132 @@
-#include <linux/proc_fs.h>
-#include <linux/seq_file.h>
-#include <asm/uaccess.h>
-#include <linux/hugetlb.h>
-#include <linux/module.h>
-#include <linux/kernel.h>	/* Needed for KERN_INFO */
-#include <linux/init.h>		/* Needed for the macros */
-//#include < linux/fs.h>
+/**
+ *  procfs4.c -  create a "file" in /proc
+ * 	This program uses the seq_file library to manage the /proc file.
+ *
+ */
 
-#define BUFSIZE 150
+#include <linux/kernel.h>	/* We're doing kernel work */
+#include <linux/module.h>	/* Specifically, a module */
+#include <linux/proc_fs.h>	/* Necessary because we use proc fs */
+#include <linux/seq_file.h>	/* for seq_file */
 
+#define PROC_NAME	"iter"
+
+MODULE_AUTHOR("Philippe Reynes");
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Escribir informacion de la memoria ram.");
-MODULE_AUTHOR("Eddy Sirin - 201503699");
 
-struct sysinfo inf;
-static int escribir_archivo(struct seq_file * archivo,void *v){
-     long total_memoria = 0;
-     long memoria_libre = 0;
-     long memoria_utilizada= 0;
-     si_meminfo(&inf);
-     total_memoria = inf.totalram * 4;
-     memoria_libre = inf.freeram * 4;
-     seq_printf(archivo, "********************************************************\n");
-     seq_printf(archivo, "***         Laboratorio Sistemas Operativos 1        ***\n");
-     seq_printf(archivo, "***              Vacaciones Junio 2020               ***\n");
-     seq_printf(archivo, "***     Eddy Javier Sirin Hernandez -- 201503699     ***\n");
-     seq_printf(archivo, "***   Carlos Augusto Bautista Salguero -- 200815342  ***\n");
-     seq_printf(archivo, "***                                                  ***\n");
-     seq_printf(archivo, "***               Proyecto 1  -- Parte 1             ***\n");
-     seq_printf(archivo, "***                 Modulo Memoria RAM               ***\n");
-     seq_printf(archivo, "***                                                  ***\n");
-     seq_printf(archivo, "********************************************************\n");
-     seq_printf(archivo, "********************************************************\n");
-     memoria_utilizada = total_memoria-memoria_libre;
-     seq_printf(archivo, "             Memoria Total: \t  %8lu MB           \n",total_memoria);
-     seq_printf(archivo, "             Memoria Libre: \t  %8lu MB           \n",memoria_libre);
-     seq_printf(archivo, "          Memoria Utilizada: \t  %8lu %%         \n",(memoria_utilizada * 100)/total_memoria);
-     
-     
-     seq_printf(archivo, "********************************************************\n");
-
-     struct task_struct *task;
-
-    for_each_process( task ){  
-        seq_printf(archivo, "{%s [%d]}\n ", task->comm, task->pid);
-    }
-
-    return 0;
-    
-}
-static int al_abrir(struct inode *inode, struct file *file){
-    return single_open(file, escribir_archivo,NULL);
-}
-
-static struct file_operations operaciones = 
+/**
+ * This function is called at the beginning of a sequence.
+ * ie, when:
+ *	- the /proc file is read (first time)
+ *	- after the function stop (end of sequence)
+ *
+ */
+static void *my_seq_start(struct seq_file *s, loff_t *pos)
 {
-    .open = al_abrir,
-    .read = seq_read
+	static unsigned long counter = 0;
+
+	/* beginning a new sequence ? */	
+	if ( *pos == 0 )
+	{	
+		/* yes => return a non null value to begin the sequence */
+		return &counter;
+	}
+	else
+	{
+		/* no => it's the end of the sequence, return end to stop reading */
+		*pos = 0;
+		return NULL;
+	}
+}
+
+/**
+ * This function is called after the beginning of a sequence.
+ * It's called untill the return is NULL (this ends the sequence).
+ *
+ */
+static void *my_seq_next(struct seq_file *s, void *v, loff_t *pos)
+{
+	unsigned long *tmp_v = (unsigned long *)v;
+	(*tmp_v)++;
+	(*pos)++;
+	return NULL;
+}
+
+/**
+ * This function is called at the end of a sequence
+ * 
+ */
+static void my_seq_stop(struct seq_file *s, void *v)
+{
+	/* nothing to do, we use a static value in start() */
+}
+
+/**
+ * This function is called for each "step" of a sequence
+ *
+ */
+static int my_seq_show(struct seq_file *s, void *v)
+{
+	loff_t *spos = (loff_t *) v;
+	
+	seq_printf(s, "%Ld\n", *spos);
+	return 0;
+}
+
+/**
+ * This structure gather "function" to manage the sequence
+ *
+ */
+static struct seq_operations my_seq_ops = {
+	.start = my_seq_start,
+	.next  = my_seq_next,
+	.stop  = my_seq_stop,
+	.show  = my_seq_show
 };
 
-static int __init iniciar(void){
-    proc_create("CPU_Brandon",0,NULL,&operaciones);
-    return 0;
+/**
+ * This function is called when the /proc file is open.
+ *
+ */
+static int my_open(struct inode *inode, struct file *file)
+{
+	return seq_open(file, &my_seq_ops);
+};
+
+/**
+ * This structure gather "function" that manage the /proc file
+ *
+ */
+static struct file_operations my_file_ops = {
+	.owner   = THIS_MODULE,
+	.open    = my_open,
+	.read    = seq_read,
+	.llseek  = seq_lseek,
+	.release = seq_release
+};
+	
+	
+/**
+ * This function is called when the module is loaded
+ *
+ */
+int init_module(void)
+{
+	struct proc_dir_entry *entry;
+
+	entry = create_proc_entry(PROC_NAME, 0, NULL);
+	if (entry) {
+		entry->proc_fops = &my_file_ops;
+	}
+	
+	return 0;
 }
 
-static void __exit salir(void){
-    remove_proc_entry("CPU_Brandon",NULL);
-    printk(KERN_INFO "Sistemas Operativos 1\n");
+/**
+ * This function is called when the module is unloaded.
+ *
+ */
+void cleanup_module(void)
+{
+	remove_proc_entry(PROC_NAME, NULL);
 }
-
-module_init(iniciar);
-module_exit(salir);
