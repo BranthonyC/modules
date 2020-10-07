@@ -35,17 +35,21 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
      seq_printf(archivo, "******************************************************************\n");
      seq_printf(archivo, "                                                            \n");
   
-     for_each_process( task ){            /*    for_each_process() MACRO for iterating through each task in the os located in linux\sched\signal.h    */
-        seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld }\n",task->pid,task->pid, task->comm, task->state);/*    log parent id/executable name/state    */
-        list_for_each(list, &task->children){                        /*    list_for_each MACRO to iterate through task->children    */
+    for_each_process(task){
+        pr_info("%s [%d]\n", task->comm, task->pid);
+        seq_printf(archivo, "%s [%d]\n", task->comm, task->pid);/*    log parent id/executable name/state    */
+    }
+    //  for_each_process( task ){            /*    for_each_process() MACRO for iterating through each task in the os located in linux\sched\signal.h    */
+    //     seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld }\n",task->pid,task->pid, task->comm, task->state);/*    log parent id/executable name/state    */
+    //     list_for_each(list, &task->children){                        /*    list_for_each MACRO to iterate through task->children    */
  
-            task_child = list_entry( list, struct task_struct, sibling );    /*    using list_entry to declare all vars in task_child struct    */
+    //         task_child = list_entry( list, struct task_struct, sibling );    /*    using list_entry to declare all vars in task_child struct    */
      
-            seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld , \"CPU\": %u }\n",task->pid, /*    log child of and child pid/name/state    */
-                task_child->pid, task_child->comm, task_child->state, task_child->cpu);
-        }
+    //         seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld , \"CPU\": %u }\n",task->pid, /*    log child of and child pid/name/state    */
+    //             task_child->pid, task_child->comm, task_child->state, task_child->cpu);
+    //     }
         
-    }    
+    // }    
      seq_printf(archivo, "*******************************************************************************************\n");
      return 0;
     
