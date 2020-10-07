@@ -1,37 +1,47 @@
-// SPDX-License-Identifier: GPL-3.0
-#include <linux/kernel.h>  // printk(), pr_*()
-#include <linux/module.h>  // THIS_MODULE, MODULE_VERSION, ...
-#include <linux/init.h>    // module_{init,exit}()
-#include <linux/smp.h>     // get_cpu(), put_cpu()
-#include <linux/cpufreq.h> // cpufreq_get()
-#include <linux/cpumask.h> // cpumask_{first,next}(), cpu_online_mask
+/* gcc -o hog smallhog.c */
+#include <time.h>
+#include <limits.h>
+#include <signal.h>
+#include <sys/time.h>
+#define HIST 10
 
-#ifdef pr_fmt
-#undef pr_fmt
-#endif
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+static volatile sig_atomic_t stop;
 
-static int __init modinit(void)
+static void sighandler (int signr)
 {
-        unsigned cpu = cpumask_first(cpu_online_mask);
-
-        while (cpu < nr_cpu_ids) {
-                pr_info("CPU: %u, freq: %u kHz\n", cpu, cpufreq_get(cpu));
-                cpu = cpumask_next(cpu, cpu_online_mask);
-        }
-
-        return 0;
+(void) signr;
+stop = 1;
 }
-
-static void __exit modexit(void)
+static unsigned long hog (unsigned long niters)
 {
-        // Empty function only to be able to unload the module.
-        return;
+stop = 0;
+while (!stop && --niters);
+return niters;
 }
+int main (void)
+{
+int i;
+struct itimerval it = { .it_interval = { .tv_sec = 0, .tv_usec = 1 },
+                        .it_value = { .tv_sec = 0, .tv_usec = 1 } };
+sigset_t set;
+unsigned long v[HIST];
+double tmp = 0.0;
+unsigned long n;
+signal (SIGALRM, &sighandler);
+setitimer (ITIMER_REAL, &it, NULL);
 
-module_init(modinit);
-module_exit(modexit);
-MODULE_VERSION("0.1");
-MODULE_DESCRIPTION("Get CPU frequency for currently online CPUs.");
-MODULE_AUTHOR("Marco Bonelli");
-MODULE_LICENSE("GPL");
+hog (ULONG_MAX);
+for (i = 0; i < HIST; ++i) v[i] = ULONG_MAX - hog (ULONG_MAX);
+for (i = 0; i < HIST; ++i) tmp += v[i];
+tmp /= HIST;
+n = tmp - (tmp / 3.0);
+
+sigemptyset (&set);
+sigaddset (&set, SIGALRM);
+
+for (;;) {
+        hog (n);
+        sigwait (&set, &i);
+}
+return 0;
+}
