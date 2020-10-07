@@ -1,104 +1,111 @@
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/kthread.h>  // for kthread_run
-#include <linux/slab.h>     // for kmalloc
-#include <linux/fs.h>       // for vfs_*
-#include <asm/uaccess.h>    // for segment descriptors
+//Last modified: 18/11/12 19:13:35(CET) by Fabian Holler
+#include <stdlib.h> 
+#include <sys/types.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Slava Imameev");
+struct pstat {
+    long unsigned int utime_ticks;
+    long int cutime_ticks;
+    long unsigned int stime_ticks;
+    long int cstime_ticks;
+    long unsigned int vsize; // virtual memory size in bytes
+    long unsigned int rss; //Resident  Set  Size in bytes
 
-static struct task_struct* g_task = NULL;
+    long unsigned int cpu_total_time;
+};
 
-void put_task_struct(task_struct * task){
-	g_task = task;
+/*
+ * read /proc data into the passed struct pstat
+ * returns 0 on success, -1 on error
+*/
+int get_usage(const pid_t pid, struct pstat* result) {
+    //convert  pid to string
+    char pid_s[20];
+    snprintf(pid_s, sizeof(pid_s), "%d", pid);
+    char stat_filepath[30] = "/proc/"; strncat(stat_filepath, pid_s,
+            sizeof(stat_filepath) - strlen(stat_filepath) -1);
+    strncat(stat_filepath, "/stat", sizeof(stat_filepath) -
+            strlen(stat_filepath) -1);
+
+    FILE *fpstat = fopen(stat_filepath, "r");
+    if (fpstat == NULL) {
+        perror("FOPEN ERROR ");
+        return -1;
+    }
+
+    FILE *fstat = fopen("/proc/stat", "r");
+    if (fstat == NULL) {
+        perror("FOPEN ERROR ");
+        fclose(fstat);
+        return -1;
+    }
+
+    //read values from /proc/pid/stat
+    bzero(result, sizeof(struct pstat));
+    long int rss;
+    if (fscanf(fpstat, "%*d %*s %*c %*d %*d %*d %*d %*d %*u %*u %*u %*u %*u %lu"
+                "%lu %ld %ld %*d %*d %*d %*d %*u %lu %ld",
+                &result->utime_ticks, &result->stime_ticks,
+                &result->cutime_ticks, &result->cstime_ticks, &result->vsize,
+                &rss) == EOF) {
+        fclose(fpstat);
+        return -1;
+    }
+    fclose(fpstat);
+    result->rss = rss * getpagesize();
+
+    //read+calc cpu total time from /proc/stat
+    long unsigned int cpu_time[10];
+    bzero(cpu_time, sizeof(cpu_time));
+    if (fscanf(fstat, "%*s %lu %lu %lu %lu %lu %lu %lu %lu %lu %lu",
+                &cpu_time[0], &cpu_time[1], &cpu_time[2], &cpu_time[3],
+                &cpu_time[4], &cpu_time[5], &cpu_time[6], &cpu_time[7],
+                &cpu_time[8], &cpu_time[9]) == EOF) {
+        fclose(fstat);
+        return -1;
+    }
+
+    fclose(fstat);
+
+    for(int i=0; i < 10;i++)
+        result->cpu_total_time += cpu_time[i];
+
+    return 0;
 }
 
-task_struct get_task_struct(){
-	return g_task;
-}
-
-static ssize_t read_file(char* filename, void* buffer, size_t size, loff_t offset)
+/*
+* calculates the elapsed CPU usage between 2 measuring points. in percent
+*/
+void calc_cpu_usage_pct(const struct pstat* cur_usage,
+                        const struct pstat* last_usage,
+                        double* ucpu_usage, double* scpu_usage)
 {
-	struct file  *f;
-	mm_segment_t old_fs;
-	ssize_t      bytes_read = 0;
+    const long unsigned int total_time_diff = cur_usage->cpu_total_time -
+                                              last_usage->cpu_total_time;
 
-	f = filp_open(filename, O_RDONLY, 0);
-	if (!f)
-	{
-		printk(KERN_INFO "filp_open failed\n");
-		return -ENOENT;
-	}
+    *ucpu_usage = 100 * (((cur_usage->utime_ticks + cur_usage->cutime_ticks)
+                    - (last_usage->utime_ticks + last_usage->cutime_ticks))
+                    / (double) total_time_diff);
 
-	// prepare for calling vfs_* functions with kernel space allocated parameters
-	old_fs = get_fs();
-	set_fs(KERNEL_DS);
-	{
-		bytes_read = vfs_read(f, buffer, size, &offset);
-	}
-	set_fs(old_fs);
-
-	filp_close(f,NULL);
-
-	return bytes_read;
+    *scpu_usage = 100 * ((((cur_usage->stime_ticks + cur_usage->cstime_ticks)
+                    - (last_usage->stime_ticks + last_usage->cstime_ticks))) /
+                    (double) total_time_diff);
 }
 
-int kthread_read(void* data)
+/*
+* calculates the elapsed CPU usage between 2 measuring points in ticks
+*/
+void calc_cpu_usage(const struct pstat* cur_usage,
+                    const struct pstat* last_usage,
+                    long unsigned int* ucpu_usage,
+                    long unsigned int* scpu_usage)
 {
-	char*        buffer = NULL;
-	const size_t size = 512;
-	ssize_t      bytes_read;
 
-	buffer = kmalloc(size, GFP_KERNEL);
-	if (!buffer)
-		goto leave;
+    *ucpu_usage = (cur_usage->utime_ticks + cur_usage->cutime_ticks) -
+                  (last_usage->utime_ticks + last_usage->cutime_ticks);
 
-	bytes_read = read_file( "/etc/hosts", buffer, size, 0 );
-	if (bytes_read < 0)
-	{
-		printk( KERN_INFO "read_file failed\n");
-		goto leave;
-	}
-
-	// add a zero terminator
-	buffer[ bytes_read%(size-1) ] = '\0';
-
-	printk(KERN_INFO "bytes read %d\n", (unsigned int)bytes_read);
-	printk(KERN_INFO "a first read string: %s\n", buffer);
-
-leave:
-
-	if (buffer)
-		kfree(buffer);
-
-	return 0; // do_exit() is called when this returns
+    *scpu_usage = (cur_usage->stime_ticks + cur_usage->cstime_ticks) -
+                  (last_usage->stime_ticks + last_usage->cstime_ticks);
 }
-
-static int __init _init(void)
-{
-	g_task = kthread_create(kthread_read, NULL, "kthread_read");
-	if (!IS_ERR(g_task))
-	{
-		// kthread_read doesn't wait for a termination event so we need to take a reference before
-		// the thread has a chance to run as the thread terminates with do_exit() that calls put_task_struct()
-		get_task_struct(g_task);
-		wake_up_process(g_task);
-	}	
-	return 0;
-}
-
-static void __exit _exit(void)
-{
-	// wait fot the thread termination
-	if (g_task)
-	{
-		kthread_stop(g_task);
-		put_task_struct(g_task);
-	}
-
-	printk(KERN_INFO "Bye!\n");
-}
-
-module_init(_init);
-module_exit(_exit);
