@@ -1,226 +1,213 @@
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/proc_fs.h>
-#include <linux/seq_file.h>
-#include <linux/kallsyms.h>
-#include <linux/rwlock.h>
-#include <asm/uaccess.h>
-#include "procdetails.h"
 
-static char buf[BUF];
-static struct _proc_details_ proc_details;
-static void* subdir_lock;
-static subdir_find_t subdir_find = NULL;
-static xlate_t xlate = NULL;
-static syms_lookup_t syms_lookup = NULL;
-static symbol_name_t symbol_name = NULL;
+/*  Mapfile Reading Module                  ::     code 2001 per mammon_
+ *
+ *    This just demonstrates how to read the values of given symbols from
+ *    a system mapfile while in kernel mode. The code is largely a quick
+ *    hack after an all-nighter, but is functional.
+ *
+ *    -- To compile:
+ *       gcc -I/usr/src/linux/include -Wall -c mapfile_read`.c
+ */
+#define __KERNEL__
+#define MODULE
+#define LINUX
 
-static void get_details(void);
+#if CONFIG_MODVERSIONS==1
+ #define MODVERSIONS
+ #include <linux/modversions.h>
+#endif
+#include <linux/kernel.h>		/* half of these might not even be needed */
+#include <linux/module.h> 
+#include <linux/init.h>  
+#include <linux/slab.h>
+#include <linux/unistd.h> 
+#include <linux/sched.h> 
+#include <linux/fs.h>
+#include <linux/file.h>	
+#include <linux/mm.h>
 
 
-// ----------------------------------------------------------------------------------------------------------
-struct proc_dir_entry {
-    unsigned int low_ino;
-    umode_t mode;
-    nlink_t nlink;
-    kuid_t uid;
-    kgid_t gid;
-    loff_t size;
-    const struct inode_operations *proc_iops;
-    const struct file_operations *proc_fops;
-    struct proc_dir_entry *parent;
-    struct rb_root subdir;
-    struct rb_node subdir_node;
-    void *data;
-    atomic_t count;
-    atomic_t in_use;
-    struct completion *pde_unload_completion;
-    struct list_head pde_openers;
-    spinlock_t pde_unload_lock;
-    u8 namelen;
-    char name[];
-};
 
-// ----------------------------------------------------------------------------------------------------------
-static int proc_procreadwrite_show (struct seq_file *m, void *v) {
-    size_t spacing;
-    char spacing_left[] = "                                                   ";
+/* ============================================================== SYS_READ */
+static int my_goddamn_read_actor(read_descriptor_t * desc, struct page *page, unsigned long offset, unsigned long size)
+{
+   char *kaddr;
+   unsigned long left = 0, count = desc->count;
 
-    if(!proc_details.filename[0] || !proc_details.dir_entry) {
-        return -ENOENT;
-    }
-    
-    spacing = (60 - strlen(proc_details.filename) - 6) / 2;
-    if(spacing < 0 || spacing >= 60) {
-        spacing = 0;
-    }
-    spacing_left[spacing] = 0;
+   if (size > count) 	size = count;
 
-    snprintf(buf, BUF, "------------------------------------------------------------\n%s/proc/%s"
-        "\n------------------------------------------------------------\n", spacing_left, proc_details.filename);
-    
-    snprintf(buf, BUF, "%s> %-42s : %s\n", buf, "Module ", proc_details.modname); 
-    if(proc_details.dir_entry) {
-        snprintf(buf, BUF, "%s> %-42s\n", buf, "Mode "); 
-        snprintf(buf, BUF, "%s      %-38s : %o\n", buf, "Format ", (proc_details.dir_entry->mode & 0170000) / (8 * 8 * 8));
-        snprintf(buf, BUF, "%s      %-38s : %o\n", buf, "Permissions ", proc_details.dir_entry->mode & 0777);
-        snprintf(buf, BUF, "%s> %-42s : %zd\n", buf, "Count ", (size_t)(proc_details.dir_entry->count.counter)); 
-        snprintf(buf, BUF, "%s> %-42s : %zd\n", buf, "In use ", (size_t)(proc_details.dir_entry->in_use.counter)); 
-    }
-    snprintf(buf, BUF, "%s> %-42s : %s\n", buf, "File Operations ", proc_details.fops[0] ? "Yes" : "No");
-    if(proc_details.fops[0]) {
-        snprintf(buf, BUF, "%s    %s = {\n", buf, proc_details.fops);
-        SHOW_FUNCTION(open)
-        SHOW_FUNCTION(read)
-        SHOW_FUNCTION(write)
-        SHOW_FUNCTION(release)
-        SHOW_FUNCTION(llseek)
-        snprintf(buf, BUF, "%s    };\n", buf);
-    }
-    
-    seq_puts(m, buf);
-    proc_details.filename[0] = 0;
-    return 0;
+   kaddr = page->virtual;
+	if (! kaddr )		return(0);
+	memcpy( desc->buf, kaddr + offset, size);
+   desc->count = count - size;
+   desc->written += size;
+   desc->buf += size;
+   return size;
+}
+
+int my_goddamn_read(struct file *f, char * buf, size_t count){
+	ssize_t ret;
+   read_descriptor_t desc;
+
+	if (! f || ! buf || ! count ) 	return -EBADF;
+	if (! f->f_op || f->f_op->read != generic_file_read )    return -EINVAL;
+
+	if (f->f_mode & FMODE_READ) {
+		ret = locks_verify_area(FLOCK_VERIFY_READ, f->f_dentry->d_inode, f, 
+				                  f->f_pos, count);
+		if (!ret) {
+			desc.written = 0;
+			desc.count = count;
+			desc.buf = buf;
+			desc.error = 0;
+			do_generic_file_read(f, &f->f_pos, &desc, my_goddamn_read_actor);
+			ret = ( desc.written ) ? desc.written : desc.error;
+		}
+	}
+   return ret;
 }
 
 
-// ----------------------------------------------------------------------------------------------------------
-static int proc_procreadwrite_open (struct inode *inode, struct file *file) {
-    return single_open (file, proc_procreadwrite_show, NULL);
-}
-
-
-// ----------------------------------------------------------------------------------------------------------
-static ssize_t proc_procreadwrite_write (struct file *file, const char * buf, size_t size, loff_t * ppos) {
-    size_t len = 255;
-    size_t i;
-    
-    if (len > size) {
-        len = size;
-    }
-
-    if (copy_from_user (proc_details.filename, buf, len)) {
-        return -EFAULT;
-    }
-
-    proc_details.filename[len] = 0;
-    for(i = 0; i < len; i++) {
-        if(proc_details.filename[i] == '\r' || proc_details.filename[i] == '\n') {
-            proc_details.filename[i] = 0;
-            break;
-        }
-    }
-
-    printk(KERN_INFO MOD "checking module: %s\n", proc_details.filename);
-    get_details();
-    return len;
-}
-
-
-
-// ----------------------------------------------------------------------------------------------------------
-static struct file_operations proc_procreadwrite_operations = {
-    .open = proc_procreadwrite_open,
-    .read = seq_read,
-    .write = proc_procreadwrite_write,
-    .llseek = seq_lseek,
-    .release = single_release,
+/* ============================================================== SYMBOLS */
+char *symbols[] = {
+	"idt_table", "set_intr_gate", "set_trap_gate", "set_system_gate",
+	"set_call_gate", "do_exit", "access_process_vm", "ptrace_readdata",
+	"ptrace_writedata", "putreg", "getreg", "show_state", "show_task",
+	"error_code", "do_debug", "do_int3", "do_nmi", NULL
 };
 
 
-
-// ----------------------------------------------------------------------------------------------------------
-static void get_details() {
-    int rv;
-    size_t len;
-    size_t symbolsize, offset;
-    const char* fn = proc_details.filename;
-    char *modname = NULL;
-    char namebuf[128];
-    
-    proc_details.dir_entry = NULL;
-    spin_lock(subdir_lock);
-    rv = xlate(proc_details.filename, &(proc_details.dir_entry), &fn);
-    printk(KERN_INFO MOD "Ret: %d, Residual: %s\n", rv, fn);
-    if(rv != 0) {
-        spin_unlock(subdir_lock);
-        return;
-    }
-    len = strlen(fn);
-    // find entry in procfs
-    proc_details.dir_entry = subdir_find(proc_details.dir_entry, fn, len);
-    if(proc_details.dir_entry) {
-        printk(KERN_INFO MOD "Name: %s, proc fops: %p\n", proc_details.dir_entry->name, proc_details.dir_entry->proc_fops);
-        // get module name
-        (void)syms_lookup((size_t)(proc_details.dir_entry->proc_fops), &symbolsize, &offset, &modname, namebuf);
-        if(modname) {
-            strlcpy(proc_details.modname, modname, 128);
-        } else {
-            strcpy(proc_details.modname, "Kernel");
-        }
-        // get file operation struct name
-        symbol_name((size_t)(proc_details.dir_entry->proc_fops), proc_details.fops);    
-        // check which functions are registered
-        GET_FUNCTION(open)
-        GET_FUNCTION(read)
-        GET_FUNCTION(write)
-        GET_FUNCTION(release)
-        GET_FUNCTION(llseek)
-    }
-    spin_unlock(subdir_lock);
+/* check if this is one of the desired symbols */
+int deal_with_symbol(char *name, unsigned long address) {
+	int x;	
+	for ( x = 0; symbols[x]; x++ ) {
+		/* find first match */
+		if (! strncmp( symbols[x], name, strlen(symbols[x]) )) {
+			printk("found %s at %08lx\n",name, address);
+			return(1);
+		}
+	}
+	return(0);
 }
 
 
-// ----------------------------------------------------------------------------------------------------------
-static int __init procdetails_init(void)
-{
-    printk(KERN_INFO MOD "module start\n");
+/* ============================================================== MAPFILE */
+/* fill 'name' and 'addr' with symbols from mapfile */
+int get_symbol_from_buf(unsigned char *buf, int len, char *name, 
+		                  unsigned long *addr) {
+	int x, start;
+	char addrbuf[12] = {0};
 
-    proc_create("procdetails", 0666, NULL, &proc_procreadwrite_operations);
-        
-    xlate = (xlate_t)kallsyms_lookup_name("__xlate_proc_name");   
-    if(!xlate) {
-        printk(KERN_INFO MOD "__xlate_proc_name not found!\n");
-        goto err;
-    }
-    subdir_lock = (void*)kallsyms_lookup_name("proc_subdir_lock");
-    if(!subdir_lock) {
-        printk(KERN_INFO MOD "proc_subdir_lock not found!\n");
-        goto err;
-    }
-    subdir_find = (subdir_find_t)kallsyms_lookup_name("pde_subdir_find");
-    if(!subdir_find) {
-        printk(KERN_INFO MOD "pde_subdir_find not found!\n");
-        goto err;
-    }
-    syms_lookup = (syms_lookup_t)kallsyms_lookup_name("kallsyms_lookup");
-    if(!syms_lookup) {
-        printk(KERN_INFO MOD "kallsyms_lookup not found!\n");
-        goto err;
-    }
-    symbol_name = (symbol_name_t)kallsyms_lookup_name("lookup_symbol_name");
-    if(!symbol_name) {
-        printk(KERN_INFO MOD "lookup_symbol_name not found!\n");
-        goto err;
-    }
-    
-    return 0;
-    
-err:
-    remove_proc_entry("procdetails", NULL);
-    return -ENODEV;
+	/* first 8 chars are address */
+	memcpy( addrbuf, buf, 8 );
 
+	*addr = simple_strtoul(addrbuf, NULL, 16); 
+	if (! *addr ) {
+		/* we have a problem: advance to next \n and exit */
+		for ( x = 0; x < len && buf[x] != '\n'; x++ )	
+			;
+		return(0); 
+	}
+	/* next 3 chars are pointless */
+	start = x = 11;
+
+	while( buf[x] != '\n' && buf[x] != 0 && x < len ) {
+		x++;
+	}
+	if ( buf[x] != '\n' ) {
+		/* we ran off the end of the buffer */
+		return(0);
+	}
+	memcpy( name, &buf[start], x - start );
+	return(x + 1);
 }
 
-// ----------------------------------------------------------------------------------------------------------
-static void __exit procdetails_exit(void)
-{
-    remove_proc_entry("procdetails", NULL);
-        
-    printk(KERN_INFO MOD "module end\n");
+#define MAPFILE_PAGE_SIZE 4096
+/* take page from mapfile, search for symbols, return # bytes read before
+ * final newline */
+int do_mapfile_page(char *buf, char *cache){
+	int x, last_n, tmpsize, pos = 0;
+	unsigned long address;
+	unsigned char name[64] = {0}, tmpbuf[128 + 64] = {0};
+
+	if (! buf || ! cache ) return(0);
+
+	if ( cache[0] ) {
+		/* find last incomplete line in cache */
+		for ( x = 0; x < 128; x++ )	
+			if (cache[x] == '\n' ) last_n = x;
+
+		tmpsize = 128 - last_n; 
+		/* copy last incomplete line and a good helping of the next buffer */
+		memcpy( tmpbuf, &cache[last_n + 1], tmpsize - 1 );
+		for ( x = 0; x < MAPFILE_PAGE_SIZE && buf[x] != '\n'; x++ )	
+			;
+		memcpy( &tmpbuf[tmpsize], buf, x + 1 );
+		tmpsize += x;
+
+		/* get first symbol from cache */
+		if ( get_symbol_from_buf( tmpbuf, tmpsize, name, &address ) ) {
+			deal_with_symbol(name, address);
+			memset(name, 0, 64);
+		} /* else I guess we just live with it :P */
+
+		/* ...and mark place in buf where we will start looking */
+		pos = x + 1;
+	}
+
+	while (  pos < MAPFILE_PAGE_SIZE && 
+			  (tmpsize = get_symbol_from_buf( &buf[pos], MAPFILE_PAGE_SIZE - pos, 
+														 name, &address))  )      {
+		/* compare against known symbols */
+		deal_with_symbol(name, address);
+		memset(name, 0, 64);
+		pos += tmpsize;
+	}
+	return(1);
 }
 
+int read_mapfile( char *path ) {
+	struct file *f;
+	char *buf, cache[128] = {0};
+	unsigned int size;
 
-module_init(procdetails_init);
-module_exit(procdetails_exit);
-MODULE_LICENSE("GPL");
+	buf = kmalloc( MAPFILE_PAGE_SIZE, GFP_KERNEL );
+	if (! buf ) 	return(0);
+
+	f = filp_open(path, O_RDONLY, 0);
+	if ( f ) {
+		if ( f->f_op->read != generic_file_read ) {
+			filp_close(f, 0);	/* we have no locks, so need no owner param */
+			return(0);
+		}
+
+		size = f->f_dentry->d_inode->i_size;
+		while( my_goddamn_read(f, buf, MAPFILE_PAGE_SIZE) > 0 ) {
+			do_mapfile_page( buf, cache );
+
+			/* store the last 128 bytes of the buffer in cache */
+			memcpy( cache, &buf[MAPFILE_PAGE_SIZE - 128], 128);
+			memset( buf, 0, MAPFILE_PAGE_SIZE );
+		}
+		filp_close(f, 0);	/* we have no locks, so need no owner param */
+	}
+	kfree(buf);
+	return(1);
+}
+
+/* ========================================================== MODULE INIT */
+char *mapfile;
+MODULE_PARM(mapfile, "s");
+
+int __init init_dbg_mod(void){
+   EXPORT_NO_SYMBOLS;
+	
+	if (! mapfile) mapfile = "/boot/System.map";
+	read_mapfile( mapfile );
+
+	return(1);
+}
+
+module_init(init_dbg_mod);
+
+/* ================================================================== EOF */
