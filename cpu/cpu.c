@@ -8,7 +8,7 @@
 #include <linux/sched.h>    // informacion de procesos
 #include <linux/sched/signal.h> //para recorrido de procesos
 #include <linux/unistd.h>       /* for _syscallX macros/related stuff */
-#include <linux/sys.h>
+#include <linux/ktime.h>
 
 //#include < linux/fs.h>
 
@@ -18,11 +18,11 @@ MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Escribir informacion de la memoria ram.");
 MODULE_AUTHOR("Eddy Sirin - 201503699");
 
-long get_uptime()
+timespec get_uptime()
 {
-    struct sysinfo si;
-	sysinfo (&si);
-	return si.uptime;
+    struct timespec  uptime;
+    get_monotonic_boottime(&uptime);
+	return uptime
 }
 
 struct task_struct *task;//info de un proceso
