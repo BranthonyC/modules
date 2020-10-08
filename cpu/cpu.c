@@ -26,7 +26,7 @@ struct list_head *list;            /*    Structure needed to iterate through the
 struct sysinfo inf;
  
 static int escribir_archivo(struct seq_file * archivo,void *v){
-     
+     si_meminfo(&inf);
     
      seq_printf(archivo, "******************************************************************\n");
      seq_printf(archivo, "***               Laboratorio Sistemas Operativos 1            ***\n");
