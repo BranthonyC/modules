@@ -23,7 +23,7 @@ MODULE_AUTHOR("Eddy Sirin - 201503699");
 struct task_struct *task;//info de un proceso
 struct task_struct *task_child;        /*    Structure needed to iterate through task children    */
 struct list_head *list;            /*    Structure needed to iterate through the list in each task->children struct    */
-struct timespec  uptime;
+struct sysinfo inf;
  
 static int escribir_archivo(struct seq_file * archivo,void *v){
      
@@ -41,10 +41,8 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
      seq_printf(archivo, "******************************************************************\n");
      seq_printf(archivo, "                                                            \n");
 
-    get_monotonic_boottime(&uptime);
-  
      for_each_process( task ){            /*    for_each_process() MACRO for iterating through each task in the os located in linux\sched\signal.h    */
-        seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld, \"UTIME\": %lli, \"STIME\": %lli, \"uptime\":%li  }\n",task->pid,task->pid, task->comm, task->state, task->utime, task->stime, uptime.tv_sec);/*    log parent id/executable name/state    */
+        seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld, \"UTIME\": %lli, \"STIME\": %lli, \"uptime\":%li  }\n",task->pid,task->pid, task->comm, task->state, task->utime, task->stime, inf.uptime);/*    log parent id/executable name/state    */
         
     }    
      seq_printf(archivo, "*******************************************************************************************\n");
