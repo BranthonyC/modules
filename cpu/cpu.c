@@ -24,7 +24,7 @@ MODULE_AUTHOR("Eddy Sirin - 201503699");
 struct task_struct *task;//info de un proceso
 struct task_struct *task_child;        /*    Structure needed to iterate through task children    */
 struct list_head *list;            /*    Structure needed to iterate through the list in each task->children struct    */
-struct sysinfo *info;
+// struct sysinfo *info;
 u64 uptime;
 u64 total_time;
 u64 seconds;
@@ -33,7 +33,7 @@ int cpu_usage;
  
 static int escribir_archivo(struct seq_file * archivo,void *v){
 	uptime = 3989905457;
-	do_sysinfo(&info);
+	// do_sysinfo(&info);
 // printk("Uptime: ", info->uptime, "\n");
 	seq_printf(archivo, "******************************************************************\n");
 	seq_printf(archivo, "***               Laboratorio Sistemas Operativos 1            ***\n");
@@ -50,8 +50,8 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
 	
 	for_each_process( task ){            /*    for_each_process() MACRO for iterating through each task in the os located in linux\sched\signal.h    */
 		total_time = task->utime + task->stime;
-		seconds = uptime - (taks->start_time/100)
-		cpu_usage = 100 * ((total_time/100)/seconds)
+		seconds = uptime - (task->start_time/100);
+		cpu_usage = 100 * ((total_time/100)/seconds);
 		// seq_printf(archivo, "{\"NOMBRE\": \"%s\", \"UTIME\": %lli, \"STIME\": %lli, \"STARTTIME\":%lli  }\n",
 		// task->comm, task->utime, task->stime, task->start_time);/*    log parent id/executable name/state    */
 		seq_printf(archivo, "{\"NOMBRE\": \"%s\", \"CPU\": %i\n",task->comm,cpu_usage);/*    log parent id/executable name/state    */
