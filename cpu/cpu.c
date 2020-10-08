@@ -9,6 +9,7 @@
 #include <linux/sched/signal.h> //para recorrido de procesos
 #include <linux/unistd.h>       /* for _syscallX macros/related stuff */
 #include <linux/ktime.h>
+#include <linux/sysinfo.h>
 
 //#include < linux/fs.h>
 
@@ -23,31 +24,29 @@ MODULE_AUTHOR("Eddy Sirin - 201503699");
 struct task_struct *task;//info de un proceso
 struct task_struct *task_child;        /*    Structure needed to iterate through task children    */
 struct list_head *list;            /*    Structure needed to iterate through the list in each task->children struct    */
-struct timespec uptime;
 
 
  
 static int escribir_archivo(struct seq_file * archivo,void *v){
-     do_posix_clock_monotonic_gettime(&uptime);
-    
-     seq_printf(archivo, "******************************************************************\n");
-     seq_printf(archivo, "***               Laboratorio Sistemas Operativos 1            ***\n");
-     seq_printf(archivo, "***                    Vacaciones Junio 2020                   ***\n");
-     seq_printf(archivo, "***           Eddy Javier Sirin Hernandez -- 201503699         ***\n");
-     seq_printf(archivo, "***        Carlos Augusto Bautista Salguero -- 200815342       ***\n");
-     seq_printf(archivo, "***                                                            ***\n");
-     seq_printf(archivo, "***                     Proyecto 1  -- Parte 1                 ***\n");
-     seq_printf(archivo, "***                       Modulo Procesos CPU                  ***\n");
-     seq_printf(archivo, "***                                                            ***\n");
-     seq_printf(archivo, "******************************************************************\n");
-     seq_printf(archivo, "******************************************************************\n");
-     seq_printf(archivo, "                                                            \n");
+	printk("Uptime: ", sysinfo.uptime, "\n");
+    //  seq_printf(archivo, "******************************************************************\n");
+    //  seq_printf(archivo, "***               Laboratorio Sistemas Operativos 1            ***\n");
+    //  seq_printf(archivo, "***                    Vacaciones Junio 2020                   ***\n");
+    //  seq_printf(archivo, "***           Eddy Javier Sirin Hernandez -- 201503699         ***\n");
+    //  seq_printf(archivo, "***        Carlos Augusto Bautista Salguero -- 200815342       ***\n");
+    //  seq_printf(archivo, "***                                                            ***\n");
+    //  seq_printf(archivo, "***                     Proyecto 1  -- Parte 1                 ***\n");
+    //  seq_printf(archivo, "***                       Modulo Procesos CPU                  ***\n");
+    //  seq_printf(archivo, "***                                                            ***\n");
+    //  seq_printf(archivo, "******************************************************************\n");
+    //  seq_printf(archivo, "******************************************************************\n");
+    //  seq_printf(archivo, "                                                            \n");
 
-     for_each_process( task ){            /*    for_each_process() MACRO for iterating through each task in the os located in linux\sched\signal.h    */
-        seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld, \"UTIME\": %lli, \"STIME\": %lli, \"uptime\":%li  }\n",task->pid,task->pid, task->comm, task->state, task->utime, task->stime, uptime.tv_sec);/*    log parent id/executable name/state    */
+    //  for_each_process( task ){            /*    for_each_process() MACRO for iterating through each task in the os located in linux\sched\signal.h    */
+    //     seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld, \"UTIME\": %lli, \"STIME\": %lli, \"uptime\":%li  }\n",task->pid,task->pid, task->comm, task->state, task->utime, task->stime, uptime.tv_sec);/*    log parent id/executable name/state    */
         
-    }    
-     seq_printf(archivo, "*******************************************************************************************\n");
+    // }    
+    //  seq_printf(archivo, "*******************************************************************************************\n");
      return 0;
     //
 }
