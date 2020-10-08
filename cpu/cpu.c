@@ -28,33 +28,20 @@ struct list_head *list;            /*    Structure needed to iterate through the
 u64 uptime;
 u64 total_time;
 u64 seconds;
-int cpu_usage;
+u64 cpu_usage;
 
  
 static int escribir_archivo(struct seq_file * archivo,void *v){
 	uptime = 350735.47;
 	// do_sysinfo(&info);
 // printk("Uptime: ", info->uptime, "\n");
-	seq_printf(archivo, "******************************************************************\n");
-	seq_printf(archivo, "***               Laboratorio Sistemas Operativos 1            ***\n");
-	seq_printf(archivo, "***                    Vacaciones Junio 2020                   ***\n");
-	seq_printf(archivo, "***           Eddy Javier Sirin Hernandez -- 201503699         ***\n");
-	seq_printf(archivo, "***        Carlos Augusto Bautista Salguero -- 200815342       ***\n");
-	seq_printf(archivo, "***                                                            ***\n");
-	seq_printf(archivo, "***                     Proyecto 1  -- Parte 1                 ***\n");
-	seq_printf(archivo, "***                       Modulo Procesos CPU                  ***\n");
-	seq_printf(archivo, "***                                                            ***\n");
-	seq_printf(archivo, "******************************************************************\n");
-	seq_printf(archivo, "******************************************************************\n");
-	seq_printf(archivo, "                                                            \n");
-	
 	for_each_process( task ){            /*    for_each_process() MACRO for iterating through each task in the os located in linux\sched\signal.h    */
 		total_time = task->utime + task->stime;
 		seconds = task->utime - (task->start_time/100);
 		cpu_usage = 100 * ((total_time/100)/seconds);
 		// seq_printf(archivo, "{\"NOMBRE\": \"%s\", \"UTIME\": %lli, \"STIME\": %lli, \"STARTTIME\":%lli  }\n",
 		// task->comm, task->utime, task->stime, task->start_time);/*    log parent id/executable name/state    */
-		seq_printf(archivo, "{\"NOMBRE\": \"%s\", \"CPU\": %i\n",task->comm,cpu_usage);/*    log parent id/executable name/state    */
+		seq_printf(archivo, "{\"NOMBRE\": \"%s\", \"CPU\": %lli\n",task->comm,cpu_usage);/*    log parent id/executable name/state    */
 	
     }    
      seq_printf(archivo, "*******************************************************************************************\n");
@@ -73,13 +60,13 @@ static struct file_operations operaciones =
 };
 
 static int __init iniciar(void){
-    proc_create("cpu_201503699",0,NULL,&operaciones);   
+    proc_create("cpu_usage",0,NULL,&operaciones);   
     printk(KERN_INFO "Eddy Javier Sirin Hernandez\nCarlos Augusto Bautista Salguero\n");
     return 0;
 }
 
 static void __exit salir(void){
-    remove_proc_entry("cpu_201503699",NULL);
+    remove_proc_entry("cpu_usage",NULL);
     printk(KERN_INFO "Sistemas Operativos 1\n");
 }
 
