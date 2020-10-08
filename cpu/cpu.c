@@ -24,13 +24,14 @@ MODULE_AUTHOR("Eddy Sirin - 201503699");
 struct task_struct *task;//info de un proceso
 struct task_struct *task_child;        /*    Structure needed to iterate through task children    */
 struct list_head *list;            /*    Structure needed to iterate through the list in each task->children struct    */
-struct sysinfo info;
+struct sysinfo *info;
 
 
  
 static int escribir_archivo(struct seq_file * archivo,void *v){
-	sysinfo(&info);
-	printk("Uptime: ", info.uptime, "\n");
+	// sysinfo(&info);
+	do_sysinfo(&info);
+	printk("Uptime: ", info->uptime, "\n");
     //  seq_printf(archivo, "******************************************************************\n");
     //  seq_printf(archivo, "***               Laboratorio Sistemas Operativos 1            ***\n");
     //  seq_printf(archivo, "***                    Vacaciones Junio 2020                   ***\n");
