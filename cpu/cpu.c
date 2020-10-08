@@ -33,12 +33,14 @@ int cpu_usage;
  
 static int escribir_archivo(struct seq_file * archivo,void *v){
 	uptime = 350735.47;
-	seq_printf(archivo, "{\n[\n");
+	seq_printf(archivo, "{\n\"procesos\":[\n");
 	for_each_process( task ){            /*    for_each_process() MACRO for iterating through each task in the os located in linux\sched\signal.h    */
 		total_time = task->utime + task->stime;
 		seconds = task->utime - (task->start_time/100);
 		cpu_usage = 100 * ((total_time/100)/seconds);
-		seq_printf(archivo, "{\"NOMBRE\": \"%s\", \"UTIME\": %lli, \"STIME\": %lli, \"STARTTIME\":%lli  },\n",
+		if(task->utime>0){
+			seq_printf(archivo, "{\"NOMBRE\": \"%s\", \"UTIME\": %lli, \"STIME\": %lli, \"STARTTIME\":%lli  },\n",
+		}
 		task->comm, task->utime, task->stime, task->start_time);/*    log parent id/executable name/state */
     }
 	seq_printf(archivo, "]\n}\n");
