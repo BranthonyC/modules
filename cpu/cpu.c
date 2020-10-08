@@ -18,12 +18,7 @@ MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Escribir informacion de la memoria ram.");
 MODULE_AUTHOR("Eddy Sirin - 201503699");
 
-int get_uptime()
-{
-    struct timespec  uptime;
-    get_monotonic_boottime(&uptime);
-	return uptime.tv_sec;
-}
+
 
 struct task_struct *task;//info de un proceso
 struct task_struct *task_child;        /*    Structure needed to iterate through task children    */
@@ -44,9 +39,12 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
      seq_printf(archivo, "******************************************************************\n");
      seq_printf(archivo, "******************************************************************\n");
      seq_printf(archivo, "                                                            \n");
+
+	struct timespec  uptime;
+    get_monotonic_boottime(&uptime)
   
      for_each_process( task ){            /*    for_each_process() MACRO for iterating through each task in the os located in linux\sched\signal.h    */
-        seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld, \"UTIME\": %lli, \"STIME\": %lli, \"uptime\":%i  }\n",task->pid,task->pid, task->comm, task->state, task->utime, task->stime, get_uptime());/*    log parent id/executable name/state    */
+        seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld, \"UTIME\": %lli, \"STIME\": %lli, \"uptime\":%i  }\n",task->pid,task->pid, task->comm, task->state, task->utime, task->stime, uptime);/*    log parent id/executable name/state    */
         
     }    
      seq_printf(archivo, "*******************************************************************************************\n");
