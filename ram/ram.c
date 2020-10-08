@@ -3,18 +3,18 @@
 #include <asm/uaccess.h>
 #include <linux/hugetlb.h>
 #include <linux/module.h>
-#include <linux/kernel.h>	/* Needed for KERN_INFO */
-#include <linux/init.h>		/* Needed for the macros */
-//#include < linux/fs.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+
 
 #define BUFSIZE 150
 
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Escribir informacion de la memoria ram.");
-MODULE_AUTHOR("Eddy Sirin - 201503699");
+MODULE_AUTHOR("Brandon Antony Chitay Coutiño");
+MODULE_DESCRIPTION("Porcentaje de uso de la memoria RAM");
 
 struct sysinfo inf;
-static int escribir_archivo(struct seq_file * archivo,void *v){
+static int write_proc_file(struct seq_file * archivo,void *v){
      long total_memoria = 0;
      long memoria_libre = 0;
      long memoria_utilizada= 0;
@@ -26,24 +26,24 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
      return 0;
     
 }
-static int al_abrir(struct inode *inode, struct file *file){
-    return single_open(file, escribir_archivo,NULL);
+static int on_open(struct inode *inode, struct file *file){
+    return single_open(file, write_proc_file,NULL);
 }
 
-static struct file_operations operaciones = 
+static struct file_operations processes = 
 {
-    .open = al_abrir,
+    .open = on_open,
     .read = seq_read
 };
 
-static int __init iniciar(void){
-    proc_create("memory_usage",0,NULL,&operaciones);   
+static int __init on_start(void){
+    proc_create("memory_usage",0,NULL,&processes);   
     return 0;
 }
 
-static void __exit salir(void){
+static void __exit on_exit(void){
     remove_proc_entry("memory_usage",NULL);
 }
 
-module_init(iniciar);
-module_exit(salir);
+module_init(on_start);
+module_exit(on_exit);
