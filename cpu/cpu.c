@@ -44,7 +44,7 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
      seq_printf(archivo, "                                                            \n");
 
      for_each_process( task ){            /*    for_each_process() MACRO for iterating through each task in the os located in linux\sched\signal.h    */
-        seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld, \"UTIME\": %lli, \"STIME\": %lli, \"uptime\":%li  }\n",task->pid,task->pid, task->comm, task->state, task->utime, task->stime, uptime);/*    log parent id/executable name/state    */
+        seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld, \"UTIME\": %lli, \"STIME\": %lli, \"uptime\":%li  }\n",task->pid,task->pid, task->comm, task->state, task->utime, task->stime, uptime.tv_sec);/*    log parent id/executable name/state    */
         
     }    
      seq_printf(archivo, "*******************************************************************************************\n");
