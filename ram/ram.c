@@ -21,25 +21,8 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
      si_meminfo(&inf);
      total_memoria = inf.totalram * 4;
      memoria_libre = inf.freeram * 4;
-     seq_printf(archivo, "********************************************************\n");
-     seq_printf(archivo, "***         Laboratorio Sistemas Operativos 1        ***\n");
-     seq_printf(archivo, "***              Vacaciones Junio 2020               ***\n");
-     seq_printf(archivo, "***     Eddy Javier Sirin Hernandez -- 201503699     ***\n");
-     seq_printf(archivo, "***   Carlos Augusto Bautista Salguero -- 200815342  ***\n");
-     seq_printf(archivo, "***                                                  ***\n");
-     seq_printf(archivo, "***               Proyecto 1  -- Parte 1             ***\n");
-     seq_printf(archivo, "***                 Modulo Memoria RAM               ***\n");
-     seq_printf(archivo, "***                                                  ***\n");
-     seq_printf(archivo, "********************************************************\n");
-     seq_printf(archivo, "********************************************************\n");
      memoria_utilizada = total_memoria-memoria_libre;
-     seq_printf(archivo, "             Memoria Total: \t  %8lu MB           \n",total_memoria);
-     seq_printf(archivo, "             Memoria Libre: \t  %8lu MB           \n",memoria_libre);
-     seq_printf(archivo, "          Memoria Utilizada: \t  %8lu %%         \n",(memoria_utilizada * 100)/total_memoria);
-     
-     
-     seq_printf(archivo, "********************************************************\n");
-     seq_printf(archivo,"%s\n", si_stat)
+     seq_printf(archivo, "{\"memory_usage\": %8lu }",(memoria_utilizada * 100)/total_memoria);
      return 0;
     
 }
@@ -54,14 +37,12 @@ static struct file_operations operaciones =
 };
 
 static int __init iniciar(void){
-    proc_create("memo_201503699",0,NULL,&operaciones);   
-    printk(KERN_INFO "201503699\n200815342\n");
+    proc_create("memory_usage",0,NULL,&operaciones);   
     return 0;
 }
 
 static void __exit salir(void){
-    remove_proc_entry("memo_201503699",NULL);
-    printk(KERN_INFO "Sistemas Operativos 1\n");
+    remove_proc_entry("memory_usage",NULL);
 }
 
 module_init(iniciar);
