@@ -8,7 +8,8 @@
 #include <linux/sched.h>    // informacion de procesos
 #include <linux/sched/signal.h> //para recorrido de procesos
 #include <linux/unistd.h>       /* for _syscallX macros/related stuff */
-#include <sys/sysinfo.h>
+#include <linux/sys.h>
+
 //#include < linux/fs.h>
 
 #define BUFSIZE 150
@@ -19,9 +20,9 @@ MODULE_AUTHOR("Eddy Sirin - 201503699");
 
 long get_uptime()
 {
-    struct sysinfo s_info;
-    int error = sysinfo(&s_info);
-    return s_info.uptime;
+    struct sysinfo si;
+	sysinfo (&si);
+	return si.uptime;
 }
 
 struct task_struct *task;//info de un proceso
