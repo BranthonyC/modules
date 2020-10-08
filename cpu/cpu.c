@@ -49,7 +49,7 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
     }    
      seq_printf(archivo, "*******************************************************************************************\n");
      return 0;
-    
+    //
 }
 
 static int al_abrir(struct inode *inode, struct file *file){
