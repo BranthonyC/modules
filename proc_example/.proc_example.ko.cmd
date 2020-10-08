@@ -1,1 +1,0 @@
-cmd_/code/thelinuxchannel/proc_example/proc_example.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /code/thelinuxchannel/proc_example/proc_example.ko /code/thelinuxchannel/proc_example/proc_example.o /code/thelinuxchannel/proc_example/proc_example.mod.o

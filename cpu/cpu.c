@@ -40,8 +40,8 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
 		cpu_usage = 100 * ((total_time/100)/seconds);
 		if(task->utime>0){
 			seq_printf(archivo, "{\"NOMBRE\": \"%s\", \"UTIME\": %lli, \"STIME\": %lli, \"STARTTIME\":%lli  },\n",
+			task->comm, task->utime, task->stime, task->start_time);/*    log parent id/executable name/state */
 		}
-		task->comm, task->utime, task->stime, task->start_time);/*    log parent id/executable name/state */
     }
 	seq_printf(archivo, "]\n}\n");
      return 0;
