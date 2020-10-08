@@ -41,7 +41,7 @@ static int escribir_archivo(struct seq_file * archivo,void *v){
  
             task_child = list_entry( list, struct task_struct, sibling );    /*    using list_entry to declare all vars in task_child struct    */
      
-            seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld , \"UTIME\": %li }\n",task->pid, /*    log child of and child pid/name/state    */
+            seq_printf(archivo, "{\"PADRE\": %d , \"PID\": %d , \"NOMBRE\": \"%s\" , \"STADO\": %ld , \"UTIME\": %lli }\n",task->pid, /*    log child of and child pid/name/state    */
                 task_child->pid, task_child->comm, task_child->state, task_child->utime);
         }
         
