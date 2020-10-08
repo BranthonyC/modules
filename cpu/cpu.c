@@ -22,7 +22,7 @@ timespec get_uptime()
 {
     struct timespec  uptime;
     get_monotonic_boottime(&uptime);
-	return uptime
+	return uptime;
 }
 
 struct task_struct *task;//info de un proceso
