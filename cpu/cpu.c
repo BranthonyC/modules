@@ -32,7 +32,7 @@ int cpu_usage;
 
  
 static int escribir_archivo(struct seq_file * archivo,void *v){
-	uptime = 398990545739;
+	uptime = 350735.47;
 	// do_sysinfo(&info);
 // printk("Uptime: ", info->uptime, "\n");
 	seq_printf(archivo, "******************************************************************\n");
