@@ -158,7 +158,7 @@ static int show_stat(struct seq_file *p, void *v)
         seq_printf(p, "t_total: %lld \n", t_total);
         seq_printf(p, "t_idle: %lld \n", t_idle);
         seq_printf(p, "t_usage: %lld \n",t_usage);
-        seq_printf(p, "cpu: : %lld", div64_u64(t_usage, t_total)*100);
+        seq_printf(p, "cpu: : %lld", div64_u64(t_usage, t_total));
 		seq_putc(p, '\n');
 	}
 	seq_put_decimal_ull(p, "intr ", (unsigned long long)sum);
