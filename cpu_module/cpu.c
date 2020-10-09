@@ -156,11 +156,10 @@ static int show_stat(struct seq_file *p, void *v)
         t_idle = idle+iowait;
         t_usage = t_total - t_idle;
         u64 percentage;
-        percentage = 100;
         seq_printf(p, "t_total: %lld \n", t_total);
         seq_printf(p, "t_idle: %lld \n", t_idle);
         seq_printf(p, "t_usage: %lld \n",t_usage);
-        seq_printf(p, "cpu: : %lld", percentage*div64_u64(t_usage, t_total));
+        seq_printf(p, "cpu: : %lld", 100*div64_u64(t_usage, t_total)/10);
 		seq_putc(p, '\n');
 	}
 	seq_put_decimal_ull(p, "intr ", (unsigned long long)sum);
