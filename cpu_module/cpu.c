@@ -35,6 +35,10 @@
 
 #ifdef arch_idle_time
 
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Brandon Antony Chitay Coutiño");
+MODULE_DESCRIPTION("Porcentaje de uso de del CPU.");
+
 static u64 get_idle_time(struct kernel_cpustat *kcs, int cpu)
 {
 	u64 idle;
