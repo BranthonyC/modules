@@ -110,15 +110,15 @@ static void show_irq_gap(struct seq_file *p, unsigned int gap)
 
 static void show_all_irqs(struct seq_file *p)
 {
-	unsigned int i, next = 0;
+// 	unsigned int i, next = 0;
 
-	for_each_active_irq(i) {
-		show_irq_gap(p, i - next);
-		seq_put_decimal_ull(p, " ", kstat_irqs_usr(i));
-		next = i + 1;
-	}
-	show_irq_gap(p, nr_irqs - next);
-}
+// 	for_each_active_irq(i) {
+// 		show_irq_gap(p, i - next);
+// 		seq_put_decimal_ull(p, " ", kstat_irqs_usr(i));
+// 		next = i + 1;
+// 	}
+// 	show_irq_gap(p, nr_irqs - next);
+// }
 
 static int show_stat(struct seq_file *p, void *v)
 {
@@ -203,17 +203,17 @@ static int show_stat(struct seq_file *p, void *v)
 
 	show_all_irqs(p);
 
-	seq_printf(p,
-		"\nctxt %llu\n"
-		"btime %llu\n"
-		"processes %lu\n"
-		"procs_running %lu\n"
-		"procs_blocked %lu\n",
-		nr_context_switches(),
-		(unsigned long long)boottime.tv_sec,
-		total_forks,
-		nr_running(),
-		nr_iowait());
+	// seq_printf(p,
+	// 	"\nctxt %llu\n"
+	// 	"btime %llu\n"
+	// 	"processes %lu\n"
+	// 	"procs_running %lu\n"
+	// 	"procs_blocked %lu\n",
+	// 	nr_context_switches(),
+	// 	(unsigned long long)boottime.tv_sec,
+	// 	total_forks,
+	// 	nr_running(),
+	// 	nr_iowait());
 
 	seq_put_decimal_ull(p, "softirq ", (unsigned long long)sum_softirq);
 
