@@ -149,7 +149,7 @@ static int show_stat(struct seq_file *p, void *v)
 		guest += kcs->cpustat[CPUTIME_GUEST];
 		guest_nice += kcs->cpustat[CPUTIME_GUEST_NICE];
 		sum += kstat_cpu_irqs_sum(i);
-		sum += arch_irq_stat_cpu(i);
+		// sum += arch_irq_stat_cpu(i);
 
 		for (j = 0; j < NR_SOFTIRQS; j++) {
 			unsigned int softirq_stat = kstat_softirqs_cpu(j, i);
@@ -158,9 +158,9 @@ static int show_stat(struct seq_file *p, void *v)
 			sum_softirq += softirq_stat;
 		}
 	}
-	sum += arch_irq_stat();
+	// sum += arch_irq_stat();
 
-	seq_put_decimal_ull(p, "cpu  ", nsec_to_clock_t(user));
+	// seq_put_decimal_ull(p, "cpu  ", nsec_to_clock_t(user));
 	seq_put_decimal_ull(p, " ", nsec_to_clock_t(nice));
 	seq_put_decimal_ull(p, " ", nsec_to_clock_t(system));
 	seq_put_decimal_ull(p, " ", nsec_to_clock_t(idle));
