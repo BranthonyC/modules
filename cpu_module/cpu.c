@@ -1,3 +1,13 @@
+#include <asm/uaccess.h>
+#include <linux/hugetlb.h>
+#include <linux/module.h>
+#include <linux/kernel.h>	
+#include <linux/init.h>		
+#include <linux/sched.h>    
+#include <linux/sched/signal.h>
+#include <linux/unistd.h>      
+#include <linux/ktime.h>
+#include <linux/sysinfo.h>
 // SPDX-License-Identifier: GPL-2.0
 #include <linux/cpumask.h>
 #include <linux/fs.h>
