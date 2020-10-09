@@ -33,11 +33,11 @@
 #define arch_irq_stat() 0
 #endif
 
-#ifdef arch_idle_time
-
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Brandon Antony Chitay Coutiño");
 MODULE_DESCRIPTION("Porcentaje de uso de del CPU.");
+
+#ifdef arch_idle_time
 
 static u64 get_idle_time(struct kernel_cpustat *kcs, int cpu)
 {
@@ -95,31 +95,6 @@ static u64 get_iowait_time(struct kernel_cpustat *kcs, int cpu)
 
 #endif
 
-// static void show_irq_gap(struct seq_file *p, unsigned int gap)
-// {
-// 	static const char zeros[] = " 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0";
-
-// 	while (gap > 0) {
-// 		unsigned int inc;
-
-// 		inc = min_t(unsigned int, gap, ARRAY_SIZE(zeros) / 2);
-// 		seq_write(p, zeros, 2 * inc);
-// 		gap -= inc;
-// 	}
-// }
-
-// static void show_all_irqs(struct seq_file *p)
-// {
-// 	unsigned int i, next = 0;
-
-// 	// for_each_active_irq(i) {
-// 	// 	show_irq_gap(p, i - next);
-// 	// 	// seq_put_decimal_ull(p, " ", kstat_irqs_usr(i));
-// 	// 	next = i + 1;
-// 	// }
-// 	// show_irq_gap(p, nr_irqs - next);
-// }
-
 static int show_stat(struct seq_file *p, void *v)
 {
 	int i, j;
@@ -158,18 +133,6 @@ static int show_stat(struct seq_file *p, void *v)
 			sum_softirq += softirq_stat;
 		}
 	}
-	// sum += arch_irq_stat();
-
-	// seq_put_decimal_ull(p, "cpu  ", nsec_to_clock_t(user));
-	// seq_put_decimal_ull(p, " ", nsec_to_clock_t(nice));
-	// seq_put_decimal_ull(p, " ", nsec_to_clock_t(system));
-	// seq_put_decimal_ull(p, " ", nsec_to_clock_t(idle));
-	// seq_put_decimal_ull(p, " ", nsec_to_clock_t(iowait));
-	// seq_put_decimal_ull(p, " ", nsec_to_clock_t(irq));
-	// seq_put_decimal_ull(p, " ", nsec_to_clock_t(softirq));
-	// seq_put_decimal_ull(p, " ", nsec_to_clock_t(steal));
-	// seq_put_decimal_ull(p, " ", nsec_to_clock_t(guest));
-	// seq_put_decimal_ull(p, " ", nsec_to_clock_t(guest_nice));
 	seq_putc(p, '\n');
 
 	for_each_online_cpu(i) {
@@ -187,38 +150,10 @@ static int show_stat(struct seq_file *p, void *v)
 		guest = kcs->cpustat[CPUTIME_GUEST];
 		guest_nice = kcs->cpustat[CPUTIME_GUEST_NICE];
 		seq_printf(p, "cpu%d", i);
-		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(user));
-		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(nice));
-		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(system));
-		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(idle));
-		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(iowait));
-		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(irq));
-		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(softirq));
-		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(steal));
-		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(guest));
-		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(guest_nice));
 		seq_putc(p, '\n');
 	}
 	seq_put_decimal_ull(p, "intr ", (unsigned long long)sum);
-
-	// show_all_irqs(p);
-
-	// seq_printf(p,
-	// 	"\nctxt %llu\n"
-	// 	"btime %llu\n"
-	// 	"processes %lu\n"
-	// 	"procs_running %lu\n"
-	// 	"procs_blocked %lu\n",
-	// 	nr_context_switches(),
-	// 	(unsigned long long)boottime.tv_sec,
-	// 	total_forks,
-	// 	nr_running(),
-	// 	nr_iowait());
-
 	seq_put_decimal_ull(p, "softirq ", (unsigned long long)sum_softirq);
-
-	// for (i = 0; i < NR_SOFTIRQS; i++)
-		// seq_put_decimal_ull(p, " ", per_softirq_sums[i]);
 	seq_putc(p, '\n');
 
 	return 0;
