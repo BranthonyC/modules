@@ -114,7 +114,7 @@ static void show_all_irqs(struct seq_file *p)
 
 	for_each_active_irq(i) {
 		show_irq_gap(p, i - next);
-		seq_put_decimal_ull(p, " ", kstat_irqs_usr(i));
+		// seq_put_decimal_ull(p, " ", kstat_irqs_usr(i));
 		next = i + 1;
 	}
 	show_irq_gap(p, nr_irqs - next);
