@@ -13,6 +13,18 @@
 #include <linux/irqnr.h>
 #include <linux/sched/cputime.h>
 #include <linux/tick.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+#include <asm/uaccess.h>
+#include <linux/hugetlb.h>
+#include <linux/module.h>
+#include <linux/kernel.h>	
+#include <linux/init.h>		
+#include <linux/sched.h>    
+#include <linux/sched/signal.h>
+#include <linux/unistd.h>      
+#include <linux/ktime.h>
+#include <linux/sysinfo.h>
 
 #ifndef arch_irq_stat_cpu
 #define arch_irq_stat_cpu(cpu) 0
@@ -224,10 +236,14 @@ static const struct file_operations proc_stat_operations = {
 	.release	= single_release,
 };
 
-static int __init proc_stat_init(void)
-{
-	proc_create("stat", 0, NULL, &proc_stat_operations);
+static int __init on_start(void){
+    proc_create("cpu_usage", 0, NULL, &proc_stat_operations);
 	return 0;
 }
 
-module_init(proc_stat_init);
+static void __exit on_exit(void){
+    remove_proc_entry("cpu_usage",NULL);
+}
+
+module_init(on_start);
+module_exit(on_exit);
