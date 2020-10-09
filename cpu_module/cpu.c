@@ -112,12 +112,12 @@ static void show_all_irqs(struct seq_file *p)
 {
 	unsigned int i, next = 0;
 
-	for_each_active_irq(i) {
-		show_irq_gap(p, i - next);
-		// seq_put_decimal_ull(p, " ", kstat_irqs_usr(i));
-		next = i + 1;
-	}
-	show_irq_gap(p, nr_irqs - next);
+	// for_each_active_irq(i) {
+	// 	show_irq_gap(p, i - next);
+	// 	// seq_put_decimal_ull(p, " ", kstat_irqs_usr(i));
+	// 	next = i + 1;
+	// }
+	// show_irq_gap(p, nr_irqs - next);
 }
 
 static int show_stat(struct seq_file *p, void *v)
