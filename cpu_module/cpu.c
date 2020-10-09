@@ -98,7 +98,7 @@ static u64 get_iowait_time(struct kernel_cpustat *kcs, int cpu)
 static int show_stat(struct seq_file *p, void *v)
 {
 	int i, j;
-	u64 user, nice, system, idle, iowait, irq, softirq, steal;
+	u64 user, nice, system, idle, iowait, irq, softirq, steal, t_total, t_idle, t_usage;
 	u64 guest, guest_nice;
 	u64 sum = 0;
 	u64 sum_softirq = 0;
@@ -149,7 +149,15 @@ static int show_stat(struct seq_file *p, void *v)
 		steal = kcs->cpustat[CPUTIME_STEAL];
 		guest = kcs->cpustat[CPUTIME_GUEST];
 		guest_nice = kcs->cpustat[CPUTIME_GUEST_NICE];
-		seq_printf(p, "cpu%d", i);
+		// seq_printf(p, "cpu%d", i);
+
+        t_total = user+nice+system+idle+iowait+irq+softirq+steal;
+        t_idle = idle+iowait;
+        t_usage = t_total - t_idle;
+        seq_printf(p, "t_total: %d \n", t_total);
+        seq_printf(p, "t_idle: %d \n", t_idle);
+        seq_printf(p, "t_usage: %d \n",t_usage);
+        seq_printf(p, "cpu: : %d% \n", (t_usage/t_total)*100);
 		seq_putc(p, '\n');
 	}
 	seq_put_decimal_ull(p, "intr ", (unsigned long long)sum);
