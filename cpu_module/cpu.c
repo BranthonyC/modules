@@ -187,16 +187,16 @@ static int show_stat(struct seq_file *p, void *v)
 		guest = kcs->cpustat[CPUTIME_GUEST];
 		guest_nice = kcs->cpustat[CPUTIME_GUEST_NICE];
 		seq_printf(p, "cpu%d", i);
-		seq_put_decimal_ull(p, " ", nsec_to_clock_t(user));
-		seq_put_decimal_ull(p, " ", nsec_to_clock_t(nice));
-		seq_put_decimal_ull(p, " ", nsec_to_clock_t(system));
-		seq_put_decimal_ull(p, " ", nsec_to_clock_t(idle));
-		seq_put_decimal_ull(p, " ", nsec_to_clock_t(iowait));
-		seq_put_decimal_ull(p, " ", nsec_to_clock_t(irq));
-		seq_put_decimal_ull(p, " ", nsec_to_clock_t(softirq));
-		seq_put_decimal_ull(p, " ", nsec_to_clock_t(steal));
-		seq_put_decimal_ull(p, " ", nsec_to_clock_t(guest));
-		seq_put_decimal_ull(p, " ", nsec_to_clock_t(guest_nice));
+		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(user));
+		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(nice));
+		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(system));
+		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(idle));
+		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(iowait));
+		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(irq));
+		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(softirq));
+		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(steal));
+		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(guest));
+		// seq_put_decimal_ull(p, " ", nsec_to_clock_t(guest_nice));
 		seq_putc(p, '\n');
 	}
 	seq_put_decimal_ull(p, "intr ", (unsigned long long)sum);
