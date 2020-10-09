@@ -201,7 +201,7 @@ static int show_stat(struct seq_file *p, void *v)
 	}
 	seq_put_decimal_ull(p, "intr ", (unsigned long long)sum);
 
-	show_all_irqs(p);
+	// show_all_irqs(p);
 
 	// seq_printf(p,
 	// 	"\nctxt %llu\n"
