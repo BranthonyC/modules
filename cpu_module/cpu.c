@@ -217,7 +217,7 @@ static int show_stat(struct seq_file *p, void *v)
 
 	seq_put_decimal_ull(p, "softirq ", (unsigned long long)sum_softirq);
 
-	for (i = 0; i < NR_SOFTIRQS; i++)
+	// for (i = 0; i < NR_SOFTIRQS; i++)
 		// seq_put_decimal_ull(p, " ", per_softirq_sums[i]);
 	seq_putc(p, '\n');
 
