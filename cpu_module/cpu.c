@@ -34,10 +34,6 @@
 #define arch_irq_stat() 0
 #endif
 
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Brandon Antony Chitay Coutiño");
-MODULE_DESCRIPTION("Porcentaje de uso de del CPU.");
-
 #ifdef arch_idle_time
 
 static u64 get_idle_time(struct kernel_cpustat *kcs, int cpu)
@@ -106,8 +102,8 @@ static int show_stat(struct seq_file *p, void *v)
 	unsigned int per_softirq_sums[NR_SOFTIRQS] = {0};
 	struct timespec64 boottime;
 
-	user = nice = system = idle = iowait =
-		irq = softirq = steal = 0;
+	user = nice = system = idle = iowait = 0;
+    irq = softirq = steal = 0;
 	guest = guest_nice = 0;
 	getboottime64(&boottime);
 
@@ -139,7 +135,6 @@ static int show_stat(struct seq_file *p, void *v)
 	for_each_online_cpu(i) {
 		struct kernel_cpustat *kcs = &kcpustat_cpu(i);
 
-		/* Copy values here to work around gcc-2.95.3, gcc-2.96 */
 		user = kcs->cpustat[CPUTIME_USER];
 		nice = kcs->cpustat[CPUTIME_NICE];
 		system = kcs->cpustat[CPUTIME_SYSTEM];
@@ -150,19 +145,15 @@ static int show_stat(struct seq_file *p, void *v)
 		steal = kcs->cpustat[CPUTIME_STEAL];
 		guest = kcs->cpustat[CPUTIME_GUEST];
 		guest_nice = kcs->cpustat[CPUTIME_GUEST_NICE];
-		// seq_printf(p, "cpu%d", i);
 
         t_total = user+nice+system+idle+iowait+irq+softirq+steal;
         t_idle = idle+iowait;
         t_usage = t_total - t_idle;
-        seq_printf(p, "t_total: %lld \n", t_total);
-        seq_printf(p, "t_idle: %lld \n", t_idle);
-        seq_printf(p, "t_usage: %lld \n",t_usage);
-        seq_put_decimal_ull(p, "cpu:", (unsigned long long)div64_u64(t_usage, t_total)*10000);
-		seq_putc(p, '\n');
+        seq_putc(p, '[\"cpu\":{\n');
+        seq_printf(p, "\"t_total\":\"%lld\", \n", t_total);
+        seq_printf(p, "\"t_idle\": \"%lld\", \n", t_idle);
+        seq_printf(p, "\"t_usage\": \"%lld\"\n}]",t_usage);
 	}
-	seq_put_decimal_ull(p, "intr ", (unsigned long long)sum);
-	seq_put_decimal_ull(p, "softirq ", (unsigned long long)sum_softirq);
 	seq_putc(p, '\n');
 
 	return 0;
@@ -171,8 +162,6 @@ static int show_stat(struct seq_file *p, void *v)
 static int stat_open(struct inode *inode, struct file *file)
 {
 	unsigned int size = 1024 + 128 * num_online_cpus();
-
-	/* minimum size to display an interrupt count : 2 bytes */
 	size += 2 * nr_irqs;
 	return single_open_size(file, show_stat, NULL, size);
 }
@@ -195,3 +184,7 @@ static void __exit on_exit(void){
 
 module_init(on_start);
 module_exit(on_exit);
+
+MODULE_LICENSE("GPL");
+MODULE_AUTHOR("Brandon Antony Chitay Coutiño");
+MODULE_DESCRIPTION("Porcentaje de uso de del CPU.");
