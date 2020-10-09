@@ -155,7 +155,8 @@ static int show_stat(struct seq_file *p, void *v)
         t_total = user+nice+system+idle+iowait+irq+softirq+steal;
         t_idle = idle+iowait;
         t_usage = t_total - t_idle;
-        u64 percentage = 100;
+        u64 percentage;
+        percentage = 100;
         seq_printf(p, "t_total: %lld \n", t_total);
         seq_printf(p, "t_idle: %lld \n", t_idle);
         seq_printf(p, "t_usage: %lld \n",t_usage);
