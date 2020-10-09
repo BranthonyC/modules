@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
+#include <linux/math64.h>
 #include <linux/cpumask.h>
 #include <linux/fs.h>
 #include <linux/init.h>
@@ -157,7 +158,7 @@ static int show_stat(struct seq_file *p, void *v)
         seq_printf(p, "t_total: %lld \n", t_total);
         seq_printf(p, "t_idle: %lld \n", t_idle);
         seq_printf(p, "t_usage: %lld \n",t_usage);
-        seq_printf(p, "cpu: : %lld", (t_usage/t_total)*100);
+        seq_printf(p, "cpu: : %lld", div64_u64(u64 dividend, u64 divisor)*100);
 		seq_putc(p, '\n');
 	}
 	seq_put_decimal_ull(p, "intr ", (unsigned long long)sum);
